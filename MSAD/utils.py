@@ -157,16 +157,16 @@ def knn_score(train_set, test_set, n_neighbours=2):
     return np.sum(D, axis=1)
 
 
-def get_loaders(dataset, label_class, batch_size, dataset_path, backbone):
+def get_loaders(dataset, label_classes, batch_size, dataset_path, backbone):
     trainset, trainset_moco = get_train_dataset(
-        dataset, label_class, dataset_path, backbone
+        dataset, label_classes, dataset_path, backbone
     )
 
     print(
-        f"Train Dataset: {dataset}, Normal Classes: {label_class}, length Trainset: {len(trainset)}"
+        f"Train Dataset: {dataset}, Normal Classes: {label_classes}, length Trainset: {len(trainset)}"
     )
 
-    testset = get_test_dataset(dataset, label_class, dataset_path, backbone)
+    testset = get_test_dataset(dataset, label_classes, dataset_path, backbone)
 
     print(f"length Testset: {len(testset)}")
 
@@ -227,9 +227,7 @@ def get_CIFAR10_train(normal_class_labels, path, backbone):
     trainset.data = trainset.data[normal_mask]
     trainset.targets = [0 for _ in trainset.targets]
 
-    trainset_moco = CIFAR10(
-        root=path, train=True, download=True, transform=moco_transform_color
-    )
+    trainset_moco = CIFAR10(root=path, train=True, download=True, transform=Transform())
 
     normal_mask = np.isin(trainset_moco.targets, normal_class_labels)
 
@@ -377,7 +375,7 @@ def get_CIFAR100_train(normal_class_labels, path, backbone):
     trainset.targets = [0 for _ in trainset.targets]
 
     trainset_moco = CIFAR100(
-        root=path, train=True, download=True, transform=moco_transform_color
+        root=path, train=True, download=True, transform=Transform()
     )
     trainset_moco.targets = sparse2coarse(trainset_moco.targets)
 
@@ -415,7 +413,7 @@ def get_MNIST_train(normal_class_labels, path, backbone):
     trainset.targets = [0 for _ in trainset.targets]
 
     trainset_moco = MNIST(
-        root=path, train=True, download=True, transform=moco_transform_bw
+        root=path, train=True, download=True, transform=Transform(bw=True)
     )
 
     normal_mask = np.isin(trainset_moco.targets, normal_class_labels)
@@ -450,7 +448,7 @@ def get_FASHION_MNIST_train(normal_class_labels, path, backbone):
     trainset.targets = [0 for _ in trainset.targets]
 
     trainset_moco = FashionMNIST(
-        root=path, train=True, download=True, transform=moco_transform_bw
+        root=path, train=True, download=True, transform=Transform(bw=True)
     )
 
     normal_mask = np.isin(trainset_moco.targets, normal_class_labels)
@@ -485,9 +483,7 @@ def get_SVHN_train(normal_class_labels, path, backbone):
     trainset.data = trainset.data[normal_mask]
     trainset.labels = [0 for _ in trainset.labels]
 
-    trainset_moco = SVHN(
-        root=path, split="train", download=True, transform=moco_transform_color
-    )
+    trainset_moco = SVHN(root=path, split="train", download=True, transform=Transform())
 
     normal_mask = np.isin(trainset_moco.labels, normal_class_labels)
 

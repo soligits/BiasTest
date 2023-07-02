@@ -153,7 +153,7 @@ def get_label_str(integers):
 def main(args):
     log(
         "Dataset: {}, Normal Label: {}, LR: {}".format(
-            args.source_dataset, args.label, args.lr
+            args.dataset, args.label, args.lr
         )
     )
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -166,7 +166,7 @@ def main(args):
         label_classes=args.label,
         batch_size=args.batch_size,
         backbone=args.backbone,
-        path=args.dataset_path,
+        dataset_path=args.dataset_path,
     )
 
     train_model(model, train_loader, test_loader, train_loader_1, device, args)
@@ -237,7 +237,7 @@ if __name__ == "__main__":
                 "labels": get_label_str(args.label),
                 "epochs": args.epochs,
             },
-            tags=[args.backbone, args.dataset, "MSAD"],
+            tags=[f"ResNet{args.backbone}", args.dataset, "MSAD"],
         )
     except:
         log("Failed to Login to WANDB!")
