@@ -237,7 +237,11 @@ if __name__ == "__main__":
                 "labels": get_label_str(args.label),
                 "epochs": args.epochs,
             },
-            tags=[f"ResNet{args.backbone}", args.dataset, "MSAD"],
+            tags=[
+                f"ResNet{args.backbone}",
+                args.dataset,
+                "MSAD" if args.epochs > 0 else "DN2",
+            ],
         )
     except:
         log("Failed to Login to WANDB!")
