@@ -101,7 +101,7 @@ std = torch.tensor(std).view(3, 1, 1).cuda()
 
 class Transform:
     def __init__(self, bw=False):
-        self.moco_transform = moco_transform_bw if bw else moco_transform
+        self.moco_transform = moco_transform_bw if bw else moco_transform_color
 
     def __call__(self, x):
         x_1 = self.moco_transform(x)
