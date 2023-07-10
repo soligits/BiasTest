@@ -11,9 +11,22 @@ import logging
 import numpy as np
 import os
 import wandb
+import csv
 
 global Logger
 Logger = None
+
+
+def csv_log(filename, epoch, loss, auc):
+    # Opening the file in append mode
+    with open(filename, "a", newline="") as file:
+        writer = csv.writer(file)
+
+        # Write header only if the file is new (i.e., empty)
+        if file.tell() == 0:
+            writer.writerow(["Epoch", "Loss", "AUROC"])
+
+        writer.writerow([epoch, loss, auc])
 
 
 def log(msg):
@@ -54,11 +67,24 @@ def log_on_wandb(results):
 
 def train_model(model, train_loader, test_loader, train_loader_1, device, args):
     model.eval()
+
+    # Ensure the directory exists
+    os.makedirs("./results-csv/", exist_ok=True)
+
+    # Generate initial filename
+    file_name = f"./results-csv/MSAD-{args.dataset}-{get_label_str(args.label)}-epochs{args.epochs}-ResNet{args.backbone}.csv"
+    base_name = file_name.split(".csv")[0]
+
+    counter = 1
+    while os.path.exists(file_name):
+        file_name = f"{base_name}_{counter}.csv"
+        counter += 1
+
     auc, feature_space = get_score(model, device, train_loader, test_loader)
 
     log_on_wandb({"auc": auc})
-
     log("Epoch: {}, AUROC is: {}".format(0, auc))
+    csv_log(file_name, 0, "-", auc)
 
     optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=0.00005)
     center = torch.FloatTensor(feature_space).mean(dim=0)
@@ -69,18 +95,20 @@ def train_model(model, train_loader, test_loader, train_loader_1, device, args):
     center = center.to(device)
 
     for epoch in range(args.epochs):
+        model.train()
         running_loss = run_epoch(
             model, train_loader_1, optimizer, center, device, args.angular
         )
 
         log("Epoch: {}, Loss: {}".format(epoch + 1, running_loss))
 
+        model.eval()
         auc, _ = get_score(model, device, train_loader, test_loader)
 
         log("Epoch: {}, AUROC is: {}".format(epoch + 1, auc))
 
+        csv_log(file_name, epoch + 1, running_loss, auc)
         log_on_wandb({"train_loss": running_loss, "auc": auc})
-
     try:
         wandb.finish()
     except:
@@ -192,6 +220,7 @@ if __name__ == "__main__":
             "18",
             "50",
             "152",
+            "resnet18_linf_eps8.0",
         ],
         default="18",
         type=str,
