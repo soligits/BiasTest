@@ -23,6 +23,7 @@ from torch.utils.data import DataLoader
 from torchvision.models import wide_resnet50_2, resnet18
 import datasets.mvtec as mvtec
 import csv
+from torch.utils.data import ConcatDataset
 
 # device setup
 use_cuda = torch.cuda.is_available()
@@ -97,6 +98,9 @@ def main():
                 args.data_path, class_name=mvtec.CLASS_NAMES[class_idx], is_train=False
             )
         )
+
+    train_dataset = ConcatDataset(train_dataset)
+    test_dataset = ConcatDataset(test_dataset)
 
     class_name = "_".join(
         [mvtec.CLASS_NAMES[class_idx] for class_idx in sorted(args.label)]
@@ -252,13 +256,23 @@ def main():
     per_pixel_rocauc = roc_auc_score(gt_mask.flatten(), scores.flatten())
     print("pixel ROCAUC: %.3f" % (per_pixel_rocauc))
 
-    results_file = open(
-        f"results-{len(set(args.label)):02d}-{class_indices}-{class_name}.csv", "w"
-    )
-    results_writer = csv.writer(results_file)
+    os.makedirs(os.path.join("./", "csv-results"), exist_ok=True)
 
-    results_writer.writerow(["label-indices", "labels", "Image-AUROC", "Pixel-AUROC"])
-    results_writer.writerow([class_indices, class_name, img_roc_auc, per_pixel_rocauc])
+    csv_path = os.path.join(
+        "./csv-results",
+        f"results-{len(set(args.label)):02d}-{class_indices}-{class_name}.csv",
+    )
+
+    with open(csv_path, "w") as results_file:
+        results_writer = csv.writer(results_file)
+
+        results_writer.writerow(
+            ["label-indices", "labels", "Image-AUROC", "Pixel-AUROC"]
+        )
+
+        results_writer.writerow(
+            [class_indices, class_name, img_roc_auc, per_pixel_rocauc]
+        )
 
 
 def plot_fig(test_img, scores, gts, threshold, save_dir, class_name):
