@@ -191,7 +191,6 @@ def main(args):
         dataset=args.dataset,
         label_classes=args.label,
         batch_size=args.batch_size,
-        backbone=args.backbone,
         dataset_path=args.dataset_path,
     )
 
