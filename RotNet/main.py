@@ -11,6 +11,7 @@ import numpy as np
 import os
 import wandb
 import csv
+import torch.nn as nn
 
 global Logger
 Logger = None
@@ -56,7 +57,7 @@ def train_model(model, train_loader, test_loader, device, args):
         file_name = f"{base_name}_{counter}.csv"
         counter += 1
 
-    auc = get_score(model, device, train_loader, test_loader)
+    auc = get_score(model, device, test_loader)
 
     log_on_wandb({"auc": auc})
     log("Epoch: {}, AUROC is: {}".format(0, auc))
@@ -72,7 +73,7 @@ def train_model(model, train_loader, test_loader, device, args):
         log("Epoch: {}, Loss: {}".format(epoch + 1, running_loss))
 
         model.eval()
-        auc = get_score(model, device, train_loader, test_loader)
+        auc = get_score(model, device, test_loader)
 
         log("Epoch: {}, AUROC is: {}".format(epoch + 1, auc))
 
@@ -87,7 +88,7 @@ def train_model(model, train_loader, test_loader, device, args):
 def run_epoch(model, train_loader, optimizer, criterion, device):
     running_loss = 0.0
     total_num = 0
-    for i, data in tqdm(enumerate(train_loader, 0), desc="Train..."):
+    for data in tqdm(train_loader, desc="Train..."):
         # get the inputs; data is a list of [inputs, labels]
         inputs_original = data[0].to(device)
 
@@ -137,7 +138,7 @@ def get_score(model, device, test_loader):
     anomaly_scores = []
     test_labels = []
     with torch.no_grad():
-        for i, data in tqdm(enumerate(test_loader, 0), desc="Training"):
+        for i, data in tqdm(enumerate(test_loader, 0), desc="Testing"):
             # get the inputs; data is a list of [inputs, labels]
             inputs_original = data[0].to(device)
             labels = data[1]
