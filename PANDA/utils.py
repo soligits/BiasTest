@@ -116,7 +116,7 @@ def get_train_dataset(dataset, label_class, path):
     elif dataset == "svhn":
         return get_SVHN_train(label_class, path)
     elif dataset == "mvtec":
-        return get_MVTEC_train()(label_class, path)
+        return get_MVTEC_train(label_class, path)
     else:
         raise Exception("Source Dataset is not supported yet. ")
         exit()
