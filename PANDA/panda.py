@@ -69,20 +69,22 @@ def get_score(model, device, train_loader, test_loader):
         for imgs, _ in tqdm(train_loader, desc="Train set feature extracting"):
             imgs = imgs.to(device)
             _, features = model(imgs)
-            train_feature_space.append(features)
+            train_feature_space.append(features.detach())
         train_feature_space = (
             torch.cat(train_feature_space, dim=0).contiguous().cpu().numpy()
         )
     test_feature_space = []
+    test_labels = []
     with torch.no_grad():
-        for imgs, _ in tqdm(test_loader, desc="Test set feature extracting"):
+        for imgs, labels in tqdm(test_loader, desc="Test set feature extracting"):
             imgs = imgs.to(device)
             _, features = model(imgs)
-            test_feature_space.append(features)
+            test_feature_space.append(features.detach())
+            test_labels.append(labels)
         test_feature_space = (
             torch.cat(test_feature_space, dim=0).contiguous().cpu().numpy()
         )
-        test_labels = test_loader.dataset.targets
+        test_labels = torch.cat(test_labels, dim=0).cpu().numpy()
 
     distances = utils.knn_score(train_feature_space, test_feature_space)
 
