@@ -1,6 +1,8 @@
 from common.eval import *
 import wandb
 import numpy as np
+ import os
+import csv
 
 model.eval()
 
@@ -80,19 +82,56 @@ elif P.mode in ["ood", "ood_pre"]:
         print("Failed to Login to WANDB!")
 
     log_on_wandb({"auc": final_auroc})
+    
+    # Create the directory if it doesn't exist
+    directory = f"./{P.dataset}/{np.unique(P.one_class_idx).shape[0]}"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-    bests = []
-    for ood in auroc_dict.keys():
-        message = ""
-        best_auroc = 0
-        for ood_score, auroc in auroc_dict[ood].items():
-            message += "[%s %s %.4f] " % (ood, ood_score, auroc)
-            if auroc > best_auroc:
-                best_auroc = auroc
-        message += "[%s %s %.4f] " % (ood, "best", best_auroc)
-        if P.print_score:
-            print(message)
-        bests.append(best_auroc)
+    # Define the CSV file path
+    csv_file_path = (
+        f"{directory}/CSI_{P.dataset}_{get_label_str(P.one_class_idx)}_{P.model}.csv"
+    )
+
+    # Open the CSV file in append mode
+    with open(csv_file_path, "a", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+
+        # Write the header if the file is empty
+        if os.stat(csv_file_path).st_size == 0:
+            header = [
+                "epochs",
+                "label_count",
+                "dataset",
+                "labels",
+                "architecture",
+                "auc",
+            ]
+            writer.writerow(header)
+
+        # Write the data to the CSV file
+        data = [
+            P.epochs,
+            np.unique(P.one_class_idx).shape[0],
+            P.dataset,
+            get_label_str(P.one_class_idx),
+            P.model,
+            final_auroc,
+        ]
+        writer.writerow(data)
+        
+        bests = []
+        for ood in auroc_dict.keys():
+            message = ""
+            best_auroc = 0
+            for ood_score, auroc in auroc_dict[ood].items():
+                message += "[%s %s %.4f] " % (ood, ood_score, auroc)
+                if auroc > best_auroc:
+                    best_auroc = auroc
+            message += "[%s %s %.4f] " % (ood, "best", best_auroc)
+            if P.print_score:
+                print(message)
+            bests.append(best_auroc)
 
     bests = map("{:.4f}".format, bests)
     print("\t".join(bests))
