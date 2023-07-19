@@ -7,8 +7,8 @@ from torchvision import datasets, transforms
 
 from utils.utils import set_random_seed
 
-DATA_PATH = '~/data/'
-IMAGENET_PATH = '~/data/ImageNet'
+DATA_PATH = "~/data/"
+IMAGENET_PATH = "~/data/ImageNet"
 
 
 CIFAR10_SUPERCLASS = list(range(10))  # one class
@@ -69,19 +69,25 @@ def get_transform(image_size=None):
     # Note: data augmentation is implemented in the layers
     # Hence, we only define the identity transformation here
     if image_size:  # use pre-specified image size
-        train_transform = transforms.Compose([
-            transforms.Resize((image_size[0], image_size[1])),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-        ])
-        test_transform = transforms.Compose([
-            transforms.Resize((image_size[0], image_size[1])),
-            transforms.ToTensor(),
-        ])
+        train_transform = transforms.Compose(
+            [
+                transforms.Resize((image_size[0], image_size[1])),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+            ]
+        )
+        test_transform = transforms.Compose(
+            [
+                transforms.Resize((image_size[0], image_size[1])),
+                transforms.ToTensor(),
+            ]
+        )
     else:  # use default image size
-        train_transform = transforms.Compose([
-            transforms.ToTensor(),
-        ])
+        train_transform = transforms.Compose(
+            [
+                transforms.ToTensor(),
+            ]
+        )
         test_transform = transforms.ToTensor()
 
     return train_transform, test_transform
@@ -104,124 +110,149 @@ def get_subset_with_len(dataset, length, shuffle=False):
 
 
 def get_transform_imagenet():
-
-    train_transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-    ])
-    test_transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.Resize(256),
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+        ]
+    )
+    test_transform = transforms.Compose(
+        [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+        ]
+    )
 
     train_transform = MultiDataTransform(train_transform)
 
     return train_transform, test_transform
 
 
-def get_dataset(P, dataset, test_only=False, image_size=None, download=False, eval=False):
-    if dataset in ['imagenet', 'cub', 'stanford_dogs', 'flowers102',
-                   'places365', 'food_101', 'caltech_256', 'dtd', 'pets']:
+def get_dataset(
+    P, dataset, test_only=False, image_size=None, download=True, eval=False
+):
+    if dataset in [
+        "imagenet",
+        "cub",
+        "stanford_dogs",
+        "flowers102",
+        "places365",
+        "food_101",
+        "caltech_256",
+        "dtd",
+        "pets",
+    ]:
         if eval:
-            train_transform, test_transform = get_simclr_eval_transform_imagenet(P.ood_samples,
-                                                                                 P.resize_factor, P.resize_fix)
+            train_transform, test_transform = get_simclr_eval_transform_imagenet(
+                P.ood_samples, P.resize_factor, P.resize_fix
+            )
         else:
             train_transform, test_transform = get_transform_imagenet()
     else:
         train_transform, test_transform = get_transform(image_size=image_size)
 
-    if dataset == 'cifar10':
+    if dataset == "cifar10":
         image_size = (32, 32, 3)
         n_classes = 10
-        train_set = datasets.CIFAR10(DATA_PATH, train=True, download=download, transform=train_transform)
-        test_set = datasets.CIFAR10(DATA_PATH, train=False, download=download, transform=test_transform)
+        train_set = datasets.CIFAR10(
+            DATA_PATH, train=True, download=download, transform=train_transform
+        )
+        test_set = datasets.CIFAR10(
+            DATA_PATH, train=False, download=download, transform=test_transform
+        )
 
-    elif dataset == 'cifar100':
+    elif dataset == "cifar100":
         image_size = (32, 32, 3)
         n_classes = 100
-        train_set = datasets.CIFAR100(DATA_PATH, train=True, download=download, transform=train_transform)
-        test_set = datasets.CIFAR100(DATA_PATH, train=False, download=download, transform=test_transform)
+        train_set = datasets.CIFAR100(
+            DATA_PATH, train=True, download=download, transform=train_transform
+        )
+        test_set = datasets.CIFAR100(
+            DATA_PATH, train=False, download=download, transform=test_transform
+        )
 
-    elif dataset == 'svhn':
+    elif dataset == "svhn":
         assert test_only and image_size is not None
-        test_set = datasets.SVHN(DATA_PATH, split='test', download=download, transform=test_transform)
+        test_set = datasets.SVHN(
+            DATA_PATH, split="test", download=download, transform=test_transform
+        )
 
-    elif dataset == 'lsun_resize':
+    elif dataset == "lsun_resize":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'LSUN_resize')
+        test_dir = os.path.join(DATA_PATH, "LSUN_resize")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
 
-    elif dataset == 'lsun_fix':
+    elif dataset == "lsun_fix":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'LSUN_fix')
+        test_dir = os.path.join(DATA_PATH, "LSUN_fix")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
 
-    elif dataset == 'imagenet_resize':
+    elif dataset == "imagenet_resize":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'Imagenet_resize')
+        test_dir = os.path.join(DATA_PATH, "Imagenet_resize")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
 
-    elif dataset == 'imagenet_fix':
+    elif dataset == "imagenet_fix":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'Imagenet_fix')
+        test_dir = os.path.join(DATA_PATH, "Imagenet_fix")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
 
-    elif dataset == 'imagenet':
+    elif dataset == "imagenet":
         image_size = (224, 224, 3)
         n_classes = 30
-        train_dir = os.path.join(IMAGENET_PATH, 'one_class_train')
-        test_dir = os.path.join(IMAGENET_PATH, 'one_class_test')
+        train_dir = os.path.join(IMAGENET_PATH, "one_class_train")
+        test_dir = os.path.join(IMAGENET_PATH, "one_class_test")
         train_set = datasets.ImageFolder(train_dir, transform=train_transform)
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
 
-    elif dataset == 'stanford_dogs':
+    elif dataset == "stanford_dogs":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'stanford_dogs')
+        test_dir = os.path.join(DATA_PATH, "stanford_dogs")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
-    elif dataset == 'cub':
+    elif dataset == "cub":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'cub200')
+        test_dir = os.path.join(DATA_PATH, "cub200")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
-    elif dataset == 'flowers102':
+    elif dataset == "flowers102":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'flowers102')
+        test_dir = os.path.join(DATA_PATH, "flowers102")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
-    elif dataset == 'places365':
+    elif dataset == "places365":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'places365')
+        test_dir = os.path.join(DATA_PATH, "places365")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
-    elif dataset == 'food_101':
+    elif dataset == "food_101":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'food-101', 'images')
+        test_dir = os.path.join(DATA_PATH, "food-101", "images")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
-    elif dataset == 'caltech_256':
+    elif dataset == "caltech_256":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'caltech-256')
+        test_dir = os.path.join(DATA_PATH, "caltech-256")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
-    elif dataset == 'dtd':
+    elif dataset == "dtd":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'dtd', 'images')
+        test_dir = os.path.join(DATA_PATH, "dtd", "images")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
-    elif dataset == 'pets':
+    elif dataset == "pets":
         assert test_only and image_size is not None
-        test_dir = os.path.join(DATA_PATH, 'pets')
+        test_dir = os.path.join(DATA_PATH, "pets")
         test_set = datasets.ImageFolder(test_dir, transform=test_transform)
         test_set = get_subset_with_len(test_set, length=3000, shuffle=True)
 
@@ -235,11 +266,11 @@ def get_dataset(P, dataset, test_only=False, image_size=None, download=False, ev
 
 
 def get_superclass_list(dataset):
-    if dataset == 'cifar10':
+    if dataset == "cifar10":
         return CIFAR10_SUPERCLASS
-    elif dataset == 'cifar100':
+    elif dataset == "cifar100":
         return CIFAR100_SUPERCLASS
-    elif dataset == 'imagenet':
+    elif dataset == "imagenet":
         return IMAGENET_SUPERCLASS
     else:
         raise NotImplementedError()
@@ -259,26 +290,27 @@ def get_subclass_dataset(dataset, classes):
 
 
 def get_simclr_eval_transform_imagenet(sample_num, resize_factor, resize_fix):
-
     resize_scale = (resize_factor, 1.0)  # resize scaling factor
     if resize_fix:  # if resize_fix is True, use same scale
         resize_scale = (resize_factor, resize_factor)
 
-    transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.RandomResizedCrop(224, scale=resize_scale),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-    ])
+    transform = transforms.Compose(
+        [
+            transforms.Resize(256),
+            transforms.RandomResizedCrop(224, scale=resize_scale),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+        ]
+    )
 
-    clean_trasform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-    ])
+    clean_trasform = transforms.Compose(
+        [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+        ]
+    )
 
     transform = MultiDataTransformList(transform, clean_trasform, sample_num)
 
     return transform, transform
-
-

@@ -7,8 +7,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Function
 
-if torch.__version__ >= '1.4.0':
-    kwargs = {'align_corners': False}
+if torch.__version__ >= "1.4.0":
+    kwargs = {"align_corners": False}
 else:
     kwargs = {}
 
@@ -38,7 +38,7 @@ def rgb2hsv(rgb):
     saturate = delta / Cmax
     value = Cmax
     hsv = torch.stack([hue, saturate, value], dim=1)
-    hsv[~torch.isfinite(hsv)] = 0.
+    hsv[~torch.isfinite(hsv)] = 0.0
     return hsv
 
 
@@ -67,18 +67,18 @@ def hsv2rgb(hsv):
 
 
 class RandomResizedCropLayer(nn.Module):
-    def __init__(self, size=None, scale=(0.08, 1.0), ratio=(3. / 4., 4. / 3.)):
-        '''
-            Inception Crop
-            size (tuple): size of fowarding image (C, W, H)
-            scale (tuple): range of size of the origin size cropped
-            ratio (tuple): range of aspect ratio of the origin aspect ratio cropped
-        '''
+    def __init__(self, size=None, scale=(0.08, 1.0), ratio=(3.0 / 4.0, 4.0 / 3.0)):
+        """
+        Inception Crop
+        size (tuple): size of fowarding image (C, W, H)
+        scale (tuple): range of size of the origin size cropped
+        ratio (tuple): range of aspect ratio of the origin aspect ratio cropped
+        """
         super(RandomResizedCropLayer, self).__init__()
 
         _eye = torch.eye(2, 3)
         self.size = size
-        self.register_buffer('_eye', _eye)
+        self.register_buffer("_eye", _eye)
         self.scale = scale
         self.ratio = ratio
 
@@ -96,15 +96,14 @@ class RandomResizedCropLayer(nn.Module):
         _theta[:, 1, 2] = whbias[:, 3]
 
         grid = F.affine_grid(_theta, inputs.size(), **kwargs).to(_device)
-        output = F.grid_sample(inputs, grid, padding_mode='reflection', **kwargs)
+        output = F.grid_sample(inputs, grid, padding_mode="reflection", **kwargs)
 
         if self.size is not None:
-            output = F.adaptive_avg_pool2d(output, self.size)
+            output = F.adaptive_avg_pool2d(output, self.size[:2])
 
         return output
 
     def _clamp(self, whbias):
-
         w = whbias[:, 0]
         h = whbias[:, 1]
         w_bias = whbias[:, 2]
@@ -130,7 +129,6 @@ class RandomResizedCropLayer(nn.Module):
         return whbias
 
     def _sample_latent(self, inputs):
-
         _device = inputs.device
         N, _, width, height = inputs.shape
 
@@ -170,7 +168,7 @@ class HorizontalFlipRandomCrop(nn.Module):
         super(HorizontalFlipRandomCrop, self).__init__()
         self.max_range = max_range
         _eye = torch.eye(2, 3)
-        self.register_buffer('_eye', _eye)
+        self.register_buffer("_eye", _eye)
 
     def forward(self, input, sign=None, bias=None, rotation=None):
         _device = input.device
@@ -180,7 +178,9 @@ class HorizontalFlipRandomCrop(nn.Module):
         if sign is None:
             sign = torch.bernoulli(torch.ones(N, device=_device) * 0.5) * 2 - 1
         if bias is None:
-            bias = torch.empty((N, 2), device=_device).uniform_(-self.max_range, self.max_range)
+            bias = torch.empty((N, 2), device=_device).uniform_(
+                -self.max_range, self.max_range
+            )
         _theta[:, 0, 0] = sign
         _theta[:, :, 2] = bias
 
@@ -188,18 +188,20 @@ class HorizontalFlipRandomCrop(nn.Module):
             _theta[:, 0:2, 0:2] = rotation
 
         grid = F.affine_grid(_theta, input.size(), **kwargs).to(_device)
-        output = F.grid_sample(input, grid, padding_mode='reflection', **kwargs)
+        output = F.grid_sample(input, grid, padding_mode="reflection", **kwargs)
 
         return output
 
     def _sample_latent(self, N, device=None):
         sign = torch.bernoulli(torch.ones(N, device=device) * 0.5) * 2 - 1
-        bias = torch.empty((N, 2), device=device).uniform_(-self.max_range, self.max_range)
+        bias = torch.empty((N, 2), device=device).uniform_(
+            -self.max_range, self.max_range
+        )
         return sign, bias
 
 
 class Rotation(nn.Module):
-    def __init__(self, max_range = 4):
+    def __init__(self, max_range=4):
         super(Rotation, self).__init__()
         self.max_range = max_range
         self.prob = 0.5
@@ -216,7 +218,7 @@ class Rotation(nn.Module):
 
             _prob = input.new_full((input.size(0),), self.prob)
             _mask = torch.bernoulli(_prob).view(-1, 1, 1, 1)
-            output = _mask * input + (1-_mask) * output
+            output = _mask * input + (1 - _mask) * output
 
         else:
             aug_index = aug_index % self.max_range
@@ -226,7 +228,7 @@ class Rotation(nn.Module):
 
 
 class CutPerm(nn.Module):
-    def __init__(self, max_range = 4):
+    def __init__(self, max_range=4):
         super(CutPerm, self).__init__()
         self.max_range = max_range
         self.prob = 0.5
@@ -252,7 +254,6 @@ class CutPerm(nn.Module):
         return output
 
     def _cutperm(self, inputs, aug_index):
-
         _, _, H, W = inputs.size()
         h_mid = int(H / 2)
         w_mid = int(W / 2)
@@ -261,9 +262,13 @@ class CutPerm(nn.Module):
         jigsaw_v = aug_index % 2
 
         if jigsaw_h == 1:
-            inputs = torch.cat((inputs[:, :, h_mid:, :], inputs[:, :, 0:h_mid, :]), dim=2)
+            inputs = torch.cat(
+                (inputs[:, :, h_mid:, :], inputs[:, :, 0:h_mid, :]), dim=2
+            )
         if jigsaw_v == 1:
-            inputs = torch.cat((inputs[:, :, :, w_mid:], inputs[:, :, :, 0:w_mid]), dim=3)
+            inputs = torch.cat(
+                (inputs[:, :, :, w_mid:], inputs[:, :, :, 0:w_mid]), dim=3
+            )
 
         return inputs
 
@@ -279,7 +284,7 @@ class HorizontalFlipLayer(nn.Module):
         super(HorizontalFlipLayer, self).__init__()
 
         _eye = torch.eye(2, 3)
-        self.register_buffer('_eye', _eye)
+        self.register_buffer("_eye", _eye)
 
     def forward(self, inputs):
         _device = inputs.device
@@ -289,7 +294,7 @@ class HorizontalFlipLayer(nn.Module):
         r_sign = torch.bernoulli(torch.ones(N, device=_device) * 0.5) * 2 - 1
         _theta[:, 0, 0] = r_sign
         grid = F.affine_grid(_theta, inputs.size(), **kwargs).to(_device)
-        inputs = F.grid_sample(inputs, grid, padding_mode='reflection', **kwargs)
+        inputs = F.grid_sample(inputs, grid, padding_mode="reflection", **kwargs)
 
         return inputs
 
@@ -300,10 +305,9 @@ class RandomColorGrayLayer(nn.Module):
         self.prob = p
 
         _weight = torch.tensor([[0.299, 0.587, 0.114]])
-        self.register_buffer('_weight', _weight.view(1, 3, 1, 1))
+        self.register_buffer("_weight", _weight.view(1, 3, 1, 1))
 
     def forward(self, inputs, aug_index=None):
-
         if aug_index == 0:
             return inputs
 
@@ -323,16 +327,21 @@ class ColorJitterLayer(nn.Module):
     def __init__(self, p, brightness, contrast, saturation, hue):
         super(ColorJitterLayer, self).__init__()
         self.prob = p
-        self.brightness = self._check_input(brightness, 'brightness')
-        self.contrast = self._check_input(contrast, 'contrast')
-        self.saturation = self._check_input(saturation, 'saturation')
-        self.hue = self._check_input(hue, 'hue', center=0, bound=(-0.5, 0.5),
-                                     clip_first_on_zero=False)
+        self.brightness = self._check_input(brightness, "brightness")
+        self.contrast = self._check_input(contrast, "contrast")
+        self.saturation = self._check_input(saturation, "saturation")
+        self.hue = self._check_input(
+            hue, "hue", center=0, bound=(-0.5, 0.5), clip_first_on_zero=False
+        )
 
-    def _check_input(self, value, name, center=1, bound=(0, float('inf')), clip_first_on_zero=True):
+    def _check_input(
+        self, value, name, center=1, bound=(0, float("inf")), clip_first_on_zero=True
+    ):
         if isinstance(value, numbers.Number):
             if value < 0:
-                raise ValueError("If {} is a single number, it must be non negative.".format(name))
+                raise ValueError(
+                    "If {} is a single number, it must be non negative.".format(name)
+                )
             value = [center - value, center + value]
             if clip_first_on_zero:
                 value[0] = max(value[0], 0)
@@ -340,7 +349,11 @@ class ColorJitterLayer(nn.Module):
             if not bound[0] <= value[0] <= value[1] <= bound[1]:
                 raise ValueError("{} values should be between {}".format(name, bound))
         else:
-            raise TypeError("{} should be a single number or a list/tuple with lenght 2.".format(name))
+            raise TypeError(
+                "{} should be a single number or a list/tuple with lenght 2.".format(
+                    name
+                )
+            )
 
         # if value is 0 or (1., 1.) for brightness/contrast/saturation
         # or (0., 0.) for hue, do nothing
@@ -394,8 +407,8 @@ class RandomHSVFunction(Function):
         # for backward computation
         x = rgb2hsv(x)
         h = x[:, 0, :, :]
-        h += (f_h * 255. / 360.)
-        h = (h % 1)
+        h += f_h * 255.0 / 360.0
+        h = h % 1
         x[:, 0, :, :] = h
         x[:, 1, :, :] = x[:, 1, :, :] * f_s
         x[:, 2, :, :] = x[:, 2, :, :] * f_v
@@ -425,4 +438,3 @@ class NormalizeLayer(nn.Module):
 
     def forward(self, inputs):
         return (inputs - 0.5) / 0.5
-

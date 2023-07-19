@@ -25,41 +25,36 @@ class Logger(object):
                 os.mkdir(logdir)
 
             if len(os.listdir(logdir)) != 0 and ask:
-                ans = input("log_dir is not empty. All data inside log_dir will be deleted. "
-                            "Will you proceed [y/N]? ")
-                if ans in ['y', 'Y']:
-                    shutil.rmtree(logdir)
-                else:
-                    exit(1)
+                shutil.rmtree(logdir)
 
             self.set_dir(logdir)
 
     def _make_dir(self, fn):
         today = datetime.today().strftime("%y%m%d")
-        logdir = 'logs/' + fn
+        logdir = "logs/" + fn
         return logdir
 
-    def set_dir(self, logdir, log_fn='log.txt'):
+    def set_dir(self, logdir, log_fn="log.txt"):
         self.logdir = logdir
         if not os.path.exists(logdir):
             os.mkdir(logdir)
         self.writer = SummaryWriter(logdir)
-        self.log_file = open(os.path.join(logdir, log_fn), 'a')
+        self.log_file = open(os.path.join(logdir, log_fn), "a")
 
     def log(self, string):
         if self.local_rank == 0:
-            self.log_file.write('[%s] %s' % (datetime.now(), string) + '\n')
+            self.log_file.write("[%s] %s" % (datetime.now(), string) + "\n")
             self.log_file.flush()
 
-            print('[%s] %s' % (datetime.now(), string))
+            print("[%s] %s" % (datetime.now(), string))
             sys.stdout.flush()
 
     def log_dirname(self, string):
         if self.local_rank == 0:
-            self.log_file.write('%s (%s)' % (string, self.logdir) + '\n')
+            self.log_file.write("%s (%s)" % (string, self.logdir) + "\n")
             self.log_file.flush()
 
-            print('%s (%s)' % (string, self.logdir))
+            print("%s (%s)" % (string, self.logdir))
             sys.stdout.flush()
 
     def scalar_summary(self, tag, value, step):
@@ -75,7 +70,7 @@ class Logger(object):
     def histo_summary(self, tag, values, step):
         """Log a histogram of the tensor of values."""
         if self.local_rank == 0:
-            self.writer.add_histogram(tag, values, step, bins='auto')
+            self.writer.add_histogram(tag, values, step, bins="auto")
 
 
 class AverageMeter(object):
@@ -100,15 +95,15 @@ class AverageMeter(object):
         self.average = self.sum / self.count
 
 
-def load_checkpoint(logdir, mode='last'):
-    if mode == 'last':
-        model_path = os.path.join(logdir, 'last.model')
-        optim_path = os.path.join(logdir, 'last.optim')
-        config_path = os.path.join(logdir, 'last.config')
-    elif mode == 'best':
-        model_path = os.path.join(logdir, 'best.model')
-        optim_path = os.path.join(logdir, 'best.optim')
-        config_path = os.path.join(logdir, 'best.config')
+def load_checkpoint(logdir, mode="last"):
+    if mode == "last":
+        model_path = os.path.join(logdir, "last.model")
+        optim_path = os.path.join(logdir, "last.optim")
+        config_path = os.path.join(logdir, "last.config")
+    elif mode == "best":
+        model_path = os.path.join(logdir, "best.model")
+        optim_path = os.path.join(logdir, "best.optim")
+        config_path = os.path.join(logdir, "best.config")
 
     else:
         raise NotImplementedError()
@@ -117,7 +112,7 @@ def load_checkpoint(logdir, mode='last'):
     if os.path.exists(model_path):
         model_state = torch.load(model_path)
         optim_state = torch.load(optim_path)
-        with open(config_path, 'rb') as handle:
+        with open(config_path, "rb") as handle:
             cfg = pickle.load(handle)
     else:
         return None, None, None
@@ -126,24 +121,24 @@ def load_checkpoint(logdir, mode='last'):
 
 
 def save_checkpoint(epoch, model_state, optim_state, logdir):
-    last_model = os.path.join(logdir, 'last.model')
-    last_optim = os.path.join(logdir, 'last.optim')
-    last_config = os.path.join(logdir, 'last.config')
+    last_model = os.path.join(logdir, "last.model")
+    last_optim = os.path.join(logdir, "last.optim")
+    last_config = os.path.join(logdir, "last.config")
 
     opt = {
-        'epoch': epoch,
+        "epoch": epoch,
     }
     torch.save(model_state, last_model)
     torch.save(optim_state, last_optim)
-    with open(last_config, 'wb') as handle:
+    with open(last_config, "wb") as handle:
         pickle.dump(opt, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def load_linear_checkpoint(logdir, mode='last'):
-    if mode == 'last':
-        linear_optim_path = os.path.join(logdir, 'last.linear_optim')
-    elif mode == 'best':
-        linear_optim_path = os.path.join(logdir, 'best.linear_optim')
+def load_linear_checkpoint(logdir, mode="last"):
+    if mode == "last":
+        linear_optim_path = os.path.join(logdir, "last.linear_optim")
+    elif mode == "best":
+        linear_optim_path = os.path.join(logdir, "best.linear_optim")
     else:
         raise NotImplementedError()
 
@@ -156,7 +151,7 @@ def load_linear_checkpoint(logdir, mode='last'):
 
 
 def save_linear_checkpoint(linear_optim_state, logdir):
-    last_linear_optim = os.path.join(logdir, 'last.linear_optim')
+    last_linear_optim = os.path.join(logdir, "last.linear_optim")
     torch.save(linear_optim_state, last_linear_optim)
 
 
@@ -185,21 +180,29 @@ def make_model_diagrams(probs, labels, n_bins=10):
     bins = torch.linspace(0, 1, n_bins + 1)
     bins[-1] = 1.0001
     width = bins[1] - bins[0]
-    bin_indices = [confidences.ge(bin_lower) * confidences.lt(bin_upper) for bin_lower, bin_upper in
-                   zip(bins[:-1], bins[1:])]
+    bin_indices = [
+        confidences.ge(bin_lower) * confidences.lt(bin_upper)
+        for bin_lower, bin_upper in zip(bins[:-1], bins[1:])
+    ]
     bin_corrects = [torch.mean(accuracies[bin_index]) for bin_index in bin_indices]
     bin_scores = [torch.mean(confidences[bin_index]) for bin_index in bin_indices]
 
     confs = rel_ax.bar(bins[:-1], bin_corrects.numpy(), width=width)
-    gaps = rel_ax.bar(bins[:-1], (bin_scores - bin_corrects).numpy(), bottom=bin_corrects.numpy(), color=[1, 0.7, 0.7],
-                      alpha=0.5, width=width, hatch='//', edgecolor='r')
-    rel_ax.plot([0, 1], [0, 1], '--', color='gray')
-    rel_ax.legend([confs, gaps], ['Outputs', 'Gap'], loc='best', fontsize='small')
+    gaps = rel_ax.bar(
+        bins[:-1],
+        (bin_scores - bin_corrects).numpy(),
+        bottom=bin_corrects.numpy(),
+        color=[1, 0.7, 0.7],
+        alpha=0.5,
+        width=width,
+        hatch="//",
+        edgecolor="r",
+    )
+    rel_ax.plot([0, 1], [0, 1], "--", color="gray")
+    rel_ax.legend([confs, gaps], ["Outputs", "Gap"], loc="best", fontsize="small")
 
     # Clean up
-    rel_ax.set_ylabel('Accuracy')
-    rel_ax.set_xlabel('Confidence')
+    rel_ax.set_ylabel("Accuracy")
+    rel_ax.set_xlabel("Confidence")
     f.tight_layout()
     return f
-
-
