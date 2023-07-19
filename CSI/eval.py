@@ -69,6 +69,7 @@ elif P.mode in ["ood", "ood_pre"]:
                 "label_count": np.unique(P.one_class_idx).shape[0],
                 "dataset": P.dataset,
                 "labels": get_label_str(P.one_class_idx),
+                "epochs": P.epochs,
             },
             tags=[
                 P.dataset,
