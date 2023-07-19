@@ -1,10 +1,10 @@
 from common.eval import *
 import wandb
 import numpy as np
- import os
+import os
 import csv
 
-os.makedirs('./results-csv/', exist_ok=True)
+os.makedirs("./results-csv/", exist_ok=True)
 
 model.eval()
 
@@ -84,7 +84,7 @@ elif P.mode in ["ood", "ood_pre"]:
         print("Failed to Login to WANDB!")
 
     log_on_wandb({"auc": final_auroc})
-    
+
     # Create the directory if it doesn't exist
     directory = f"./results-csv/{P.dataset}/{np.unique(P.one_class_idx).shape[0]}"
     os.makedirs(directory, exist_ok=True)
@@ -120,7 +120,7 @@ elif P.mode in ["ood", "ood_pre"]:
             final_auroc,
         ]
         writer.writerow(data)
-        
+
         bests = []
         for ood in auroc_dict.keys():
             message = ""
