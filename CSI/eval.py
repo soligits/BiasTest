@@ -4,6 +4,8 @@ import numpy as np
  import os
 import csv
 
+os.makedirs('./results-csv/', exist_ok=True)
+
 model.eval()
 
 
@@ -84,9 +86,8 @@ elif P.mode in ["ood", "ood_pre"]:
     log_on_wandb({"auc": final_auroc})
     
     # Create the directory if it doesn't exist
-    directory = f"./{P.dataset}/{np.unique(P.one_class_idx).shape[0]}"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    directory = f"./results-csv/{P.dataset}/{np.unique(P.one_class_idx).shape[0]}"
+    os.makedirs(directory, exist_ok=True)
 
     # Define the CSV file path
     csv_file_path = (
