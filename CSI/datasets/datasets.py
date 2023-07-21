@@ -185,7 +185,7 @@ def get_dataset(
     elif dataset == "mnist":
         image_size = (32, 32, 3)
         n_classes = 10
-        train_set = datasets.MNIST()(
+        train_set = datasets.MNIST(
             DATA_PATH, train=True, download=download, transform=train_transform_bw
         )
         test_set = datasets.MNIST(
@@ -195,7 +195,7 @@ def get_dataset(
     elif dataset == "fashion":
         image_size = (32, 32, 3)
         n_classes = 10
-        train_set = datasets.FashionMNIST()()(
+        train_set = datasets.FashionMNIST(
             DATA_PATH, train=True, download=download, transform=train_transform_bw
         )
         test_set = datasets.FashionMNIST(
