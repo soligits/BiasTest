@@ -9,7 +9,7 @@ def parse_args(default=False):
     parser.add_argument(
         "--dataset",
         help="Dataset",
-        choices=["cifar10", "cifar100", "imagenet"],
+        choices=["cifar10", "cifar100", "imagenet", "mnist", "fashion"],
         type=str,
     )
     parser.add_argument(

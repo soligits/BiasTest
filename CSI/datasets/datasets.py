@@ -65,9 +65,10 @@ class MultiDataTransformList(object):
         return sample_list, self.clean_transform(sample)
 
 
-def get_transform(image_size=None):
+def get_transform(image_size=None, bw=False):
     # Note: data augmentation is implemented in the layers
     # Hence, we only define the identity transformation here
+
     if image_size:  # use pre-specified image size
         train_transform = transforms.Compose(
             [
@@ -131,6 +132,23 @@ def get_transform_imagenet():
     return train_transform, test_transform
 
 
+train_transform_bw = transforms.Compose(
+    [
+        transforms.Resize((32, 32)),
+        transforms.Grayscale(num_output_channels=3),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+    ]
+)
+test_transform_bw = transforms.Compose(
+    [
+        transforms.Resize((32, 32)),
+        transforms.Grayscale(num_output_channels=3),
+        transforms.ToTensor(),
+    ]
+)
+
+
 def get_dataset(
     P, dataset, test_only=False, image_size=None, download=True, eval=False
 ):
@@ -162,6 +180,26 @@ def get_dataset(
         )
         test_set = datasets.CIFAR10(
             DATA_PATH, train=False, download=download, transform=test_transform
+        )
+
+    elif dataset == "mnist":
+        image_size = (32, 32, 3)
+        n_classes = 10
+        train_set = datasets.MNIST()(
+            DATA_PATH, train=True, download=download, transform=train_transform_bw
+        )
+        test_set = datasets.MNIST(
+            DATA_PATH, train=False, download=download, transform=test_transform_bw
+        )
+
+    elif dataset == "fashion":
+        image_size = (32, 32, 3)
+        n_classes = 10
+        train_set = datasets.FashionMNIST()()(
+            DATA_PATH, train=True, download=download, transform=train_transform_bw
+        )
+        test_set = datasets.FashionMNIST(
+            DATA_PATH, train=False, download=download, transform=test_transform_bw
         )
 
     elif dataset == "cifar100":
