@@ -90,9 +90,21 @@ elif P.mode in ["ood", "ood_pre"]:
     os.makedirs(directory, exist_ok=True)
 
     # Define the CSV file path
-    csv_file_path = (
-        f"{directory}/CSI_{P.dataset}_{get_label_str(P.one_class_idx)}_{P.model}.csv"
+
+    # Define the base CSV file path
+    base_csv_file_path = (
+        f"{directory}/CSI_{P.dataset}_{get_label_str(P.one_class_idx)}_{P.model}"
     )
+
+    # Add a unique identifier if the file already exists
+    csv_file_path = base_csv_file_path
+
+    counter = 0
+    while os.path.exists(f"{csv_file_path}.csv"):
+        csv_file_path = f"{base_csv_file_path}^{counter}"
+        counter += 1
+
+    csv_file_path += ".csv"
 
     # Open the CSV file in append mode
     with open(csv_file_path, "a", newline="") as csvfile:
