@@ -4,7 +4,12 @@ from typing import Union, List, Tuple, Generic, TypeVar
 
 import numpy as np
 import torch
-from sklearn.metrics import auc as compute_auc, roc_curve, precision_recall_curve, average_precision_score
+from sklearn.metrics import (
+    auc as compute_auc,
+    roc_curve,
+    precision_recall_curve,
+    average_precision_score,
+)
 from torch.nn import Module
 from torch.optim.lr_scheduler import _LRScheduler
 from torch.utils.data.dataloader import DataLoader
@@ -32,7 +37,7 @@ def weight_reset(m: torch.nn.Module):  # resets the weights of the given module
         m.reset_parameters()
 
 
-R = TypeVar('R')
+R = TypeVar("R")
 
 
 class Result(Generic[R]):
@@ -57,11 +62,11 @@ class Result(Generic[R]):
         self.mean_values = [None] * classes
 
     def __getitem__(self, cls: int) -> List[R]:
-        """ return the recorded metrics for the class cls """
+        """return the recorded metrics for the class cls"""
         return self.values[cls]
 
     def set_mean(self, cls: int, value: R):
-        """ set the mean for the class cls (e.g., a mean ROC plot) """
+        """set the mean for the class cls (e.g., a mean ROC plot)"""
         self.mean_values[cls] = value
 
     def mean(self, cls: int, on_none_return_latest=False) -> R:
@@ -75,8 +80,11 @@ class Result(Generic[R]):
         return mean if mean is not None else (latest if on_none_return_latest else None)
 
     def means(self, on_none_return_latest=False) -> List[R]:
-        """ returns a list of all set means """
-        return [self.mean(cls, on_none_return_latest) for cls in range(len(self.mean_values))]
+        """returns a list of all set means"""
+        return [
+            self.mean(cls, on_none_return_latest)
+            for cls in range(len(self.mean_values))
+        ]
 
     def __str__(self) -> str:
         return str(self.values)
@@ -89,16 +97,35 @@ class Result(Generic[R]):
 
 
 class ADTrainer(ABC):
-    AD_MODES = ('one_vs_rest', 'leave_one_out')  # all possible AD benchmark modes
+    AD_MODES = (
+        "one_vs_rest",
+        "leave_one_out",
+        "fifty_fifty",
+    )  # all possible AD benchmark modes
     # whether to keep the model snapshots in RAM and make the `run` method return them in addition to storing them on the disk
     KEEP_SNAPSHOT_IN_RAM = False
 
-    def __init__(self, model: torch.nn.Module, train_transform: Compose, test_transform: Compose,
-                 dataset: str, oe_dataset: str, datapath: str, logger: Logger,
-                 epochs: int, lr: float, wdk: float, milestones: List[int], batch_size: int,
-                 ad_mode: str = 'one_vs_rest', device: Union[str, torch.device] = 'cuda',
-                 oe_limit_samples: int = np.infty, oe_limit_classes: int = np.infty,
-                 msms: List[MSM] = (), workers: int = 2):
+    def __init__(
+        self,
+        model: torch.nn.Module,
+        train_transform: Compose,
+        test_transform: Compose,
+        dataset: str,
+        oe_dataset: str,
+        datapath: str,
+        logger: Logger,
+        epochs: int,
+        lr: float,
+        wdk: float,
+        milestones: List[int],
+        batch_size: int,
+        ad_mode: str = "one_vs_rest",
+        device: Union[str, torch.device] = "cuda",
+        oe_limit_samples: int = np.infty,
+        oe_limit_classes: int = np.infty,
+        msms: List[MSM] = (),
+        workers: int = 2,
+    ):
         """
         The base trainer class.
         It defines a `run` method that iterates over all classes and multiple random seeds per class.
@@ -139,7 +166,11 @@ class ADTrainer(ABC):
             have only reported results for equal filters on all data types in the paper.
         @param workers: number of data-loading workers. See :class:`torch.utils.data.DataLoader`.
         """
-        logger.logsetup(model, None, {k: v for k, v in locals().items() if k not in ['self', 'model']})  # log training setup
+        logger.logsetup(
+            model,
+            None,
+            {k: v for k, v in locals().items() if k not in ["self", "model"]},
+        )  # log training setup
         self.model = model.cpu() if model is not None else model
         self.train_transform = train_transform
         self.test_transform = test_transform
@@ -163,17 +194,26 @@ class ADTrainer(ABC):
 
     def get_nominal_classes(self, cur_class: int):
         # get the set of normal classes for the current class depending on the AD mode
-        if self.ad_mode == 'one_vs_rest':
+        if self.ad_mode == "one_vs_rest":
             return [cur_class]
-        elif self.ad_mode == 'leave_one_out':
+        elif self.ad_mode == "leave_one_out":
             return [c for c in range(no_classes(self.dsstr)) if c != cur_class]
-        elif self.ad_mode == 'fifty_fifty':
-            return [c % no_classes(self.dsstr) for c in range(cur_class, no_classes(self.dsstr) // 2 + cur_class)]
+        elif self.ad_mode == "fifty_fifty":
+            return [
+                c % no_classes(self.dsstr)
+                for c in range(cur_class, no_classes(self.dsstr) // 2 + cur_class)
+            ]
         else:
-            raise NotImplementedError(f'AD mode {self.ad_mode} unknown. Known modes are {ADTrainer.AD_MODES}.')
+            raise NotImplementedError(
+                f"AD mode {self.ad_mode} unknown. Known modes are {ADTrainer.AD_MODES}."
+            )
 
-    def run(self, run_classes: List[int] = None, run_seeds: int = 1,
-            load: List[List[Union[Module, str]]] = None) -> Tuple[List[List[Module]], dict]:
+    def run(
+        self,
+        run_classes: List[int] = None,
+        run_seeds: int = 1,
+        load: List[List[Union[Module, str]]] = None,
+    ) -> Tuple[List[List[Module]], dict]:
         """
         Iterates over all classes and multiple random seeds per class.
         For each class-seed combination, it trains and evaluates a given AD model using the trainer's loss
@@ -198,22 +238,31 @@ class ADTrainer(ABC):
               evaluation.
             All the returned information is always also stored on the disk using the trainer's logger.
         """
-        self.logger.logsetup(None, None, {'run_classes': run_classes, 'run_seeds': run_seeds, 'load': load}, step=1)
+        self.logger.logsetup(
+            None,
+            None,
+            {"run_classes": run_classes, "run_seeds": run_seeds, "load": load},
+            step=1,
+        )
 
         """ trains and evaluates cls-wise """
         # prepare variables
         classes = str_labels(self.dsstr)
-        run_classes = run_classes if run_classes is not None else list(range(len(classes)))
+        run_classes = (
+            run_classes if run_classes is not None else list(range(len(classes)))
+        )
         train_cls_rocs = Result(len(classes))
         eval_cls_rocs = Result(len(classes))
         eval_cls_prcs = Result(len(classes))
         models = lst_of_lsts(len(classes))
-        assert self.ds is None or len(run_classes) == 1, \
-            'pre-loading DS (setting trainer.ds to something) only allowed for one class'
+        assert (
+            self.ds is None or len(run_classes) == 1
+        ), "pre-loading DS (setting trainer.ds to something) only allowed for one class"
 
         # Loop over all classes, considering in each step the current class nominal
-        for c, cstr in ((c, cstr) for c, cstr in enumerate(classes) if c in run_classes):
-
+        for c, cstr in (
+            (c, cstr) for c, cstr in enumerate(classes) if c in run_classes
+        ):
             for seed in range(run_seeds):
                 self.logger.print(f'------ start training cls {c} "{cstr}" ------')
                 if load is not None and len(load) > c and len(load[c]) > seed:
@@ -224,7 +273,7 @@ class ADTrainer(ABC):
                 # prepare model
                 def copy_model():
                     if cur_load is not None and isinstance(cur_load, Module):
-                        self.logger.print('Loaded model (not snapshot).')
+                        self.logger.print("Loaded model (not snapshot).")
                         model = deepcopy(cur_load)
                     else:
                         model = deepcopy(self.model)
@@ -236,13 +285,28 @@ class ADTrainer(ABC):
                     return model
 
                 orig_cache_size = ADImageNet21k.img_cache_size
-                if isinstance(cur_load, str) and self.load_epochs_only(cur_load) >= self.epochs:
+                if (
+                    isinstance(cur_load, str)
+                    and self.load_epochs_only(cur_load) >= self.epochs
+                ):
                     ADImageNet21k.img_cache_size = 0
-                ds = load_dataset(
-                    self.dsstr, self.datapath, self.get_nominal_classes(c), 0,
-                    self.train_transform, self.test_transform, self.logger, self.oe_dsstr,
-                    self.oe_limit_samples, self.oe_limit_classes, self.msms
-                ) if self.ds is None else self.ds
+                ds = (
+                    load_dataset(
+                        self.dsstr,
+                        self.datapath,
+                        self.get_nominal_classes(c),
+                        0,
+                        self.train_transform,
+                        self.test_transform,
+                        self.logger,
+                        self.oe_dsstr,
+                        self.oe_limit_samples,
+                        self.oe_limit_classes,
+                        self.msms,
+                    )
+                    if self.ds is None
+                    else self.ds
+                )
                 ADImageNet21k.img_cache_size = orig_cache_size
 
                 # train
@@ -254,26 +318,41 @@ class ADTrainer(ABC):
                     except NanGradientsError as err:  # try once more
                         self.logger.warning(
                             f'Gradients got NaN for class {c} "{cstr}" and seed {seed}. '
-                            f'Happened {i} times so far. Try once more.'
+                            f"Happened {i} times so far. Try once more."
                         )
-                        ds = load_dataset(
-                            self.dsstr, self.datapath, self.get_nominal_classes(c), 0,
-                            self.train_transform, self.test_transform, self.logger, self.oe_dsstr,
-                            self.oe_limit_samples, self.oe_limit_classes, self.msms
-                        ) if self.ds is None else self.ds
+                        ds = (
+                            load_dataset(
+                                self.dsstr,
+                                self.datapath,
+                                self.get_nominal_classes(c),
+                                0,
+                                self.train_transform,
+                                self.test_transform,
+                                self.logger,
+                                self.oe_dsstr,
+                                self.oe_limit_samples,
+                                self.oe_limit_classes,
+                                self.msms,
+                            )
+                            if self.ds is None
+                            else self.ds
+                        )
                         if i == 3 - 1:
                             model, roc = None, None
                             self.logger.warning(
                                 f'Gradients got NaN for class {c} "{cstr}" and seed {seed}. '
-                                f'Happened {i} times so far. Try no more. Set model and roc to None.'
+                                f"Happened {i} times so far. Try no more. Set model and roc to None."
                             )
                 models[c].append(model)
                 train_cls_rocs[c].append(roc)
                 self.logger.plot_many(
-                    train_cls_rocs.means(True), classes, name='training_intermediate_roc', step=c*run_seeds+seed
+                    train_cls_rocs.means(True),
+                    classes,
+                    name="training_intermediate_roc",
+                    step=c * run_seeds + seed,
                 )
 
-                # eval 
+                # eval
                 model = models[c][-1]
                 if model is not None:
                     roc, prc = self.eval_cls(model, ds, c, cstr, seed)
@@ -281,64 +360,124 @@ class ADTrainer(ABC):
                     roc, prc = None, None
                 eval_cls_rocs[c].append(roc)
                 eval_cls_prcs[c].append(prc)
-                self.logger.plot_many(eval_cls_rocs.means(True), classes, name='eval_intermediate_roc', step=c*run_seeds+seed)
-                self.logger.plot_many(eval_cls_prcs.means(True), classes, name='eval_intermediate_prc', step=c*run_seeds+seed)
+                self.logger.plot_many(
+                    eval_cls_rocs.means(True),
+                    classes,
+                    name="eval_intermediate_roc",
+                    step=c * run_seeds + seed,
+                )
+                self.logger.plot_many(
+                    eval_cls_prcs.means(True),
+                    classes,
+                    name="eval_intermediate_prc",
+                    step=c * run_seeds + seed,
+                )
 
                 if model is not None:
-                    self.logger.snapshot(f'snapshot_cls{c}_it{seed}', model, epoch=self.epochs)
+                    self.logger.snapshot(
+                        f"snapshot_cls{c}_it{seed}", model, epoch=self.epochs
+                    )
                     if not ADTrainer.KEEP_SNAPSHOT_IN_RAM:
                         models[c][-1] = None
 
                 del ds
 
-            # seed-wise many_roc plots for current class 
-            cls_mean_roc = self.logger.plot_many(train_cls_rocs[c], None, name=f'training_cls{c}-{cstr}_roc', step=c)
-            train_cls_rocs.set_mean(c, cls_mean_roc)        
-            cls_mean_roc = self.logger.plot_many(eval_cls_rocs[c], None, name=f'eval_cls{c}-{cstr}_roc', step=c)
+            # seed-wise many_roc plots for current class
+            cls_mean_roc = self.logger.plot_many(
+                train_cls_rocs[c], None, name=f"training_cls{c}-{cstr}_roc", step=c
+            )
+            train_cls_rocs.set_mean(c, cls_mean_roc)
+            cls_mean_roc = self.logger.plot_many(
+                eval_cls_rocs[c], None, name=f"eval_cls{c}-{cstr}_roc", step=c
+            )
             eval_cls_rocs.set_mean(c, cls_mean_roc)
-            cls_mean_prc = self.logger.plot_many(eval_cls_prcs[c], None, name=f'eval_cls{c}-{cstr}_prc', step=c)
+            cls_mean_prc = self.logger.plot_many(
+                eval_cls_prcs[c], None, name=f"eval_cls{c}-{cstr}_prc", step=c
+            )
             eval_cls_prcs.set_mean(c, cls_mean_prc)
 
         # training: compute cls-wise roc curves and combine in a final overview roc plot
         if any([t is not None for t in train_cls_rocs.means()]):
-            mean_auc = np.mean([m.auc for m in train_cls_rocs.means() if m is not None]) 
+            mean_auc = np.mean([m.auc for m in train_cls_rocs.means() if m is not None])
             std_auc = np.std([m.auc for m in train_cls_rocs.means() if m is not None])
-            self.logger.logtxt(f'Training: Overall {mean_auc*100:04.2f}% +- {std_auc*100:04.2f} AUC.')
-            self.logger.plot_many(train_cls_rocs.means(), classes, name='training_roc')
+            self.logger.logtxt(
+                f"Training: Overall {mean_auc*100:04.2f}% +- {std_auc*100:04.2f} AUC."
+            )
+            self.logger.plot_many(train_cls_rocs.means(), classes, name="training_roc")
 
             # print an overview of cls-wise rocs
-            print('--------------- OVERVIEW ------------------')
-            for auc, cstr in ((a.auc, c) for a, c in zip(train_cls_rocs.means(), classes) if a is not None):
+            print("--------------- OVERVIEW ------------------")
+            for auc, cstr in (
+                (a.auc, c)
+                for a, c in zip(train_cls_rocs.means(), classes)
+                if a is not None
+            ):
                 print(f'Training: Class "{cstr}" yields {auc*100:04.2f}% AUC.')
-            print(f'Training: Overall {mean_auc*100:04.2f}% +- {std_auc*100:04.2f} AUC.')
+            print(
+                f"Training: Overall {mean_auc*100:04.2f}% +- {std_auc*100:04.2f} AUC."
+            )
 
         # evaluation: compute cls-wise roc curves and combine in a final overview roc plot
-        mean_auc = np.mean([m.auc for m in eval_cls_rocs.means() if m is not None]) 
+        mean_auc = np.mean([m.auc for m in eval_cls_rocs.means() if m is not None])
         std_auc = np.std([m.auc for m in eval_cls_rocs.means() if m is not None])
-        self.logger.plot_many(eval_cls_rocs.means(), classes, name='eval_roc')
-        mean_avg_prec = np.mean([m.avg_prec for m in eval_cls_prcs.means() if m is not None]) 
-        std_avg_prec = np.std([m.avg_prec for m in eval_cls_prcs.means() if m is not None])
-        self.logger.plot_many(eval_cls_prcs.means(), classes, name='eval_prc')
+        self.logger.plot_many(eval_cls_rocs.means(), classes, name="eval_roc")
+        mean_avg_prec = np.mean(
+            [m.avg_prec for m in eval_cls_prcs.means() if m is not None]
+        )
+        std_avg_prec = np.std(
+            [m.avg_prec for m in eval_cls_prcs.means() if m is not None]
+        )
+        self.logger.plot_many(eval_cls_prcs.means(), classes, name="eval_prc")
 
         # print some overview of the achieved scores
-        self.logger.logtxt('--------------- OVERVIEW ------------------')
-        self.logger.logtxt(f'Eval: Overall {mean_avg_prec*100:04.2f}% +- {std_avg_prec*100:04.2f}% AvgPrec.')
-        for auc, std, cstr in ((a.auc, a.std, c) for a, c in zip(eval_cls_rocs.means(), classes) if a is not None):
-            self.logger.logtxt(f'Eval: Class "{cstr}" yields {auc*100:04.2f}% +- {std*100:04.2f}% AUC.')
-        self.logger.logtxt(f'Eval: Overall {mean_auc*100:04.2f}% +- {std_auc*100:04.2f}% AUC.')
+        self.logger.logtxt("--------------- OVERVIEW ------------------")
+        self.logger.logtxt(
+            f"Eval: Overall {mean_avg_prec*100:04.2f}% +- {std_avg_prec*100:04.2f}% AvgPrec."
+        )
+        for auc, std, cstr in (
+            (a.auc, a.std, c)
+            for a, c in zip(eval_cls_rocs.means(), classes)
+            if a is not None
+        ):
+            self.logger.logtxt(
+                f'Eval: Class "{cstr}" yields {auc*100:04.2f}% +- {std*100:04.2f}% AUC.'
+            )
+        self.logger.logtxt(
+            f"Eval: Overall {mean_auc*100:04.2f}% +- {std_auc*100:04.2f}% AUC."
+        )
 
-        self.logger.logjson('results', {
-            'eval_mean_auc': mean_auc, 'eval_std_auc': std_auc, 'eval_mean_avg_prec': mean_avg_prec,
-            'eval_cls_rocs': [[roc.get_score() if roc is not None else None for roc in cls_roc] for cls_roc in eval_cls_rocs],
-            'classes': classes
-        })
+        self.logger.logjson(
+            "results",
+            {
+                "eval_mean_auc": mean_auc,
+                "eval_std_auc": std_auc,
+                "eval_mean_avg_prec": mean_avg_prec,
+                "eval_cls_rocs": [
+                    [roc.get_score() if roc is not None else None for roc in cls_roc]
+                    for cls_roc in eval_cls_rocs
+                ],
+                "classes": classes,
+            },
+        )
         return models, {
-            'mean_auc': mean_auc, 'mean_avg_prec': mean_avg_prec, 'std_auc': std_auc,
-            'cls_aucs': [[roc.get_score() if roc is not None else None for roc in cls_roc] for cls_roc in eval_cls_rocs]
+            "mean_auc": mean_auc,
+            "mean_avg_prec": mean_avg_prec,
+            "std_auc": std_auc,
+            "cls_aucs": [
+                [roc.get_score() if roc is not None else None for roc in cls_roc]
+                for cls_roc in eval_cls_rocs
+            ],
         }
 
-    def train_cls(self, model: torch.nn.Module, ds: TorchvisionDataset, cls: int, clsstr: str, seed: int,
-                  load: Union[Module, str] = None) -> Tuple[torch.nn.Module, ROC]:
+    def train_cls(
+        self,
+        model: torch.nn.Module,
+        ds: TorchvisionDataset,
+        cls: int,
+        clsstr: str,
+        seed: int,
+        load: Union[Module, str] = None,
+    ) -> Tuple[torch.nn.Module, ROC]:
         """
         Trains the given model for the current class.
         @param model: the AD model that is to be trained.
@@ -362,48 +501,82 @@ class ADTrainer(ABC):
 
         # ---- optimizers and loaders
         if isinstance(model, CLIP):
-            opt = torch.optim.SGD(model.parameters(), lr=self.lr, weight_decay=self.wdk, momentum=0.9, nesterov=True)
+            opt = torch.optim.SGD(
+                model.parameters(),
+                lr=self.lr,
+                weight_decay=self.wdk,
+                momentum=0.9,
+                nesterov=True,
+            )
         else:
-            opt = torch.optim.Adam(model.parameters(), lr=self.lr, weight_decay=self.wdk, amsgrad=False)
+            opt = torch.optim.Adam(
+                model.parameters(), lr=self.lr, weight_decay=self.wdk, amsgrad=False
+            )
         sched = torch.optim.lr_scheduler.MultiStepLR(opt, self.milestones, 0.1)
-        loader, _ = ds.loaders(self.batch_size, num_workers=self.workers, persistent=True)
+        loader, _ = ds.loaders(
+            self.batch_size, num_workers=self.workers, persistent=True
+        )
         if seed == 0 and self.logger.active:
-            prev = ds.preview(40, True,  classes=[0, 1] if isinstance(ds, CombinedDataset) else [0])
+            prev = ds.preview(
+                40, True, classes=[0, 1] if isinstance(ds, CombinedDataset) else [0]
+            )
             stats = ds.n_normal_anomalous()
             self.logger.logimg(
-                f'training_cls{cls}-{clsstr}_preview', prev, nrow=prev.shape[0] // len(stats),
-                rowheaders=[str(stats[k]) for k in sorted(stats.keys())]
+                f"training_cls{cls}-{clsstr}_preview",
+                prev,
+                nrow=prev.shape[0] // len(stats),
+                rowheaders=[str(stats[k]) for k in sorted(stats.keys())],
             )
             del prev
 
-        # ---- prepare trackers and loggers  
-        ep, loss = self.load(load if isinstance(load, str) else None, model, opt, sched), None
+        # ---- prepare trackers and loggers
+        ep, loss = (
+            self.load(load if isinstance(load, str) else None, model, opt, sched),
+            None,
+        )
         center = self.center = self.prepare_metric(clsstr, loader, model, seed)
         to_track = {
-            'ep': lambda: f'{ep+1:{len(str(epochs))}d}/{epochs}', 'loss': lambda: loss.item() if loss is not None else None, 
-            'roc': lambda: cls_roc.auc if cls_roc is not None else None, 'lr': lambda: sched.get_last_lr()[0]
+            "ep": lambda: f"{ep+1:{len(str(epochs))}d}/{epochs}",
+            "loss": lambda: loss.item() if loss is not None else None,
+            "roc": lambda: cls_roc.auc if cls_roc is not None else None,
+            "lr": lambda: sched.get_last_lr()[0],
         }
 
-        with self.logger.track([epochs, len(loader)], to_track, f'training cls{cls}') as tracker:
-
+        with self.logger.track(
+            [epochs, len(loader)], to_track, f"training cls{cls}"
+        ) as tracker:
             # ---- loop over epochs
             for ep in range(ep, epochs):
-                ep_labels, ep_ascores = [], [] 
-                
+                ep_labels, ep_ascores = [], []
+
                 # ---- loop over batches
                 for imgs, lbls, idcs in loader:
                     imgs = imgs.to(self.device)
                     lbls = lbls.to(self.device)
                     with torch.no_grad():
                         if isinstance(ds, CombinedDataset):
-                            imgs[lbls == ds.nominal_label] = ds.normal.gpu_train_conditional_transform(
-                                imgs[lbls == ds.nominal_label], [ds.nominal_label] * len(imgs[lbls == ds.nominal_label])
+                            imgs[
+                                lbls == ds.nominal_label
+                            ] = ds.normal.gpu_train_conditional_transform(
+                                imgs[lbls == ds.nominal_label],
+                                [ds.nominal_label]
+                                * len(imgs[lbls == ds.nominal_label]),
                             )
-                            imgs[lbls == ds.nominal_label] = ds.normal.gpu_train_transform(imgs[lbls == ds.nominal_label])
-                            imgs[lbls != ds.nominal_label] = ds.oe.gpu_train_conditional_transform(
-                                imgs[lbls != ds.nominal_label], [ds.anomalous_label] * len(imgs[lbls != ds.nominal_label])
+                            imgs[
+                                lbls == ds.nominal_label
+                            ] = ds.normal.gpu_train_transform(
+                                imgs[lbls == ds.nominal_label]
                             )
-                            imgs[lbls != ds.nominal_label] = ds.oe.gpu_train_transform(imgs[lbls != ds.nominal_label])
+                            imgs[
+                                lbls != ds.nominal_label
+                            ] = ds.oe.gpu_train_conditional_transform(
+                                imgs[lbls != ds.nominal_label],
+                                [ds.anomalous_label]
+                                * len(imgs[lbls != ds.nominal_label]),
+                            )
+                            imgs[lbls != ds.nominal_label] = ds.oe.gpu_train_transform(
+                                imgs[lbls != ds.nominal_label]
+                            )
                         else:
                             imgs = ds.gpu_train_conditional_transform(imgs, lbls)
                             imgs = ds.gpu_train_transform(imgs)
@@ -415,13 +588,17 @@ class ADTrainer(ABC):
                     loss.backward()
                     opt.step()
                     opt.zero_grad()
-                    anomaly_scores = self.compute_anomaly_score(image_features, center, inputs=imgs).cpu()
+                    anomaly_scores = self.compute_anomaly_score(
+                        image_features, center, inputs=imgs
+                    ).cpu()
 
                     # ---- log stuff
                     ep_labels.append(lbls.detach().cpu())
                     ep_ascores.append(anomaly_scores.detach().cpu())
                     self.logger.add_scalar(
-                        f'training_cls{cls}_seed{seed}_loss', loss.item(), tracker.n,
+                        f"training_cls{cls}_seed{seed}_loss",
+                        loss.item(),
+                        tracker.n,
                     )
                     tracker.update([0, 1])
 
@@ -438,21 +615,36 @@ class ADTrainer(ABC):
 
                 # ---- log epoch stuff
                 self.logger.tb_writer.add_histogram(
-                    f'Training: CLS{cls} SEED{seed} anomaly_scores normal', ep_ascores[ep_labels == 0], ep,
+                    f"Training: CLS{cls} SEED{seed} anomaly_scores normal",
+                    ep_ascores[ep_labels == 0],
+                    ep,
                 )
                 if (ep_labels == 1).sum() > 0:
                     self.logger.tb_writer.add_histogram(
-                        f'Training: CLS{cls} SEED{seed} anomaly_scores anomalous', ep_ascores[ep_labels == 1], ep,
+                        f"Training: CLS{cls} SEED{seed} anomaly_scores anomalous",
+                        ep_ascores[ep_labels == 1],
+                        ep,
                     )
-                    self.logger.add_scalar(f'Training: CLS{cls} SEED{seed} AUC', cls_roc.auc*100, ep, )
-                
+                    self.logger.add_scalar(
+                        f"Training: CLS{cls} SEED{seed} AUC",
+                        cls_roc.auc * 100,
+                        ep,
+                    )
+
                 # ---- update tracker and scheduler
                 sched.step()
                 tracker.update([1, 0])
 
         return model.cpu().eval(), cls_roc
 
-    def eval_cls(self, model: torch.nn.Module, ds: TorchvisionDataset, cls: int, clsstr: str, seed: int) -> Tuple[ROC, PRC]:
+    def eval_cls(
+        self,
+        model: torch.nn.Module,
+        ds: TorchvisionDataset,
+        cls: int,
+        clsstr: str,
+        seed: int,
+    ) -> Tuple[ROC, PRC]:
         """
         Evaluates the given model for the current class.
         Returns and logs the ROC and PRC metrics.
@@ -464,19 +656,23 @@ class ADTrainer(ABC):
         @return: ROC and PRC metric.
         """
         model = model.to(self.device).eval()
-        _, loader = ds.loaders(self.batch_size, num_workers=self.workers, shuffle_test=False)
+        _, loader = ds.loaders(
+            self.batch_size, num_workers=self.workers, shuffle_test=False
+        )
         if seed == 0 and self.logger.active:
             prev = ds.preview(20, False)
             stats = ds.n_normal_anomalous(False)
             self.logger.logimg(
-                f'eval_cls{cls}-{clsstr}_preview', prev, nrow=prev.shape[0] // 2,
-                rowheaders=[str(stats[0]), str(stats[1])]
+                f"eval_cls{cls}-{clsstr}_preview",
+                prev,
+                nrow=prev.shape[0] // 2,
+                rowheaders=[str(stats[0]), str(stats[1])],
             )
             del prev
 
         center = self.center
         ep_labels, ep_ascores = [], []  # [...], list of all labels/etc.
-        procbar = tqdm(desc=f'evaluating cls {clsstr}', total=len(loader))
+        procbar = tqdm(desc=f"evaluating cls {clsstr}", total=len(loader))
         for imgs, lbls, idcs in loader:
             imgs = imgs.to(self.device)
             if isinstance(ds, CombinedDataset):
@@ -487,7 +683,9 @@ class ADTrainer(ABC):
                 imgs = ds.gpu_test_transform(imgs)
             with torch.no_grad():
                 image_features = model(imgs)
-            anomaly_scores = self.compute_anomaly_score(image_features, center, inputs=imgs)
+            anomaly_scores = self.compute_anomaly_score(
+                image_features, center, inputs=imgs
+            )
             ep_labels.append(lbls.cpu())
             ep_ascores.append(anomaly_scores.cpu())
             procbar.update()
@@ -506,17 +704,28 @@ class ADTrainer(ABC):
             f'Eval: class "{clsstr}" yields {auc * 100:04.2f}% AUC and {average_prec * 100:04.2f}% average precision (seed {seed}).'
         )
         self.logger.tb_writer.add_histogram(
-            f'Eval: (SD{seed}) anomaly_scores cls{cls} nominal', ep_ascores[ep_labels == 0], 0, walltime=0
+            f"Eval: (SD{seed}) anomaly_scores cls{cls} nominal",
+            ep_ascores[ep_labels == 0],
+            0,
+            walltime=0,
         )
         self.logger.tb_writer.add_histogram(
-            f'Eval: (SD{seed}) anomaly_scores cls{cls} anomalous', ep_ascores[ep_labels == 1], 0, walltime=0
+            f"Eval: (SD{seed}) anomaly_scores cls{cls} anomalous",
+            ep_ascores[ep_labels == 1],
+            0,
+            walltime=0,
         )
         model.cpu()
 
         return cls_roc, cls_prc
 
-    def load(self, path: str, model: torch.nn.Module,
-             opt: torch.optim.Optimizer = None, sched: _LRScheduler = None) -> int:
+    def load(
+        self,
+        path: str,
+        model: torch.nn.Module,
+        opt: torch.optim.Optimizer = None,
+        sched: _LRScheduler = None,
+    ) -> int:
         """
         Loads a snapshot of the model including training state.
         @param path: the filepath where the snapshot is stored.
@@ -529,28 +738,30 @@ class ADTrainer(ABC):
         epoch = 0
         if path is not None:
             snapshot = torch.load(path)
-            net_state = snapshot.pop('net', None)
-            opt_state = snapshot.pop('opt', None)
-            sched_state = snapshot.pop('sched', None)
-            epoch = snapshot.pop('epoch', 0)
+            net_state = snapshot.pop("net", None)
+            opt_state = snapshot.pop("opt", None)
+            sched_state = snapshot.pop("sched", None)
+            epoch = snapshot.pop("epoch", 0)
             if net_state is not None:
                 model.load_state_dict(net_state)
             if opt_state is not None and opt is not None:
                 opt.load_state_dict(opt_state)
             if sched_state is not None and sched is not None:
                 sched.load_state_dict(sched_state)
-            self.logger.print(f'Loaded snapshot at epoch {epoch}')
+            self.logger.print(f"Loaded snapshot at epoch {epoch}")
         return epoch
 
     def load_epochs_only(self, path: str):
-        """ loads the last epoch with which the snapshot's model found at `path` was trained """
+        """loads the last epoch with which the snapshot's model found at `path` was trained"""
         if path is None:
             return 0
         else:
-            return torch.load(path).pop('epoch', 0)
+            return torch.load(path).pop("epoch", 0)
 
     @abstractmethod
-    def prepare_metric(self, cstr: str, loader: DataLoader, model: torch.nn.Module, seed: int, **kwargs) -> torch.Tensor:
+    def prepare_metric(
+        self, cstr: str, loader: DataLoader, model: torch.nn.Module, seed: int, **kwargs
+    ) -> torch.Tensor:
         """
         Implement a 'center' (DSVDD) or, in general, a reference tensor for the anomaly score metric.
         Executed at the beginning of training (even if training epochs == 0).
@@ -567,7 +778,9 @@ class ADTrainer(ABC):
         pass
 
     @abstractmethod
-    def compute_anomaly_score(self, features: torch.Tensor, center: torch.Tensor, **kwargs) -> torch.Tensor:
+    def compute_anomaly_score(
+        self, features: torch.Tensor, center: torch.Tensor, **kwargs
+    ) -> torch.Tensor:
         """
         Implement a method that computes the anomaly scores for a given batch of image features.
         @param features: a batch of image features (shape: n x d). The trainer computes these features with the AD model.
@@ -578,7 +791,13 @@ class ADTrainer(ABC):
         pass
 
     @abstractmethod
-    def loss(self, features: torch.Tensor, labels: torch.Tensor,  center: torch.Tensor, **kwargs) -> torch.Tensor:
+    def loss(
+        self,
+        features: torch.Tensor,
+        labels: torch.Tensor,
+        center: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor:
         """
         Implement a method that computes the loss for a given batch of image features.
         @param features: a batch of image features (shape: n x d). The trainer computes these features with the AD model.
