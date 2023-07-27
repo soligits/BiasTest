@@ -916,7 +916,7 @@ def get_CUB_train(normal_class_labels, path, backbone):
         train=True,
         download=True,
         normal_classes=normal_class_labels,
-        subclasses=list(range(20)),
+        subclasses=list(range(1, 21)),
         transform=transform,
     )
     trainset_moco = CUBAnomaly(
@@ -924,7 +924,7 @@ def get_CUB_train(normal_class_labels, path, backbone):
         train=True,
         download=True,
         normal_classes=normal_class_labels,
-        subclasses=list(range(20)),
+        subclasses=list(range(1, 21)),
         transform=Transform(),
     )
 
@@ -939,7 +939,7 @@ def get_CUB_test(normal_class_labels, path, backbone):
         train=False,
         download=True,
         normal_classes=normal_class_labels,
-        subclasses=list(range(20)),
+        subclasses=list(range(1, 21)),
         transform=transform,
     )
 
