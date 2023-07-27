@@ -852,7 +852,7 @@ class Cub2011(VisionDataset):
     def __getitem__(self, idx):
         sample = self.data.iloc[idx]
         path = os.path.join(self.root, self.base_folder, sample.filepath)
-        target = sample.target
+        target = sample.target - 1
         img = self.loader(path)
 
         if self.transform is not None:
@@ -893,6 +893,8 @@ class CUBAnomaly(Cub2011):
 
     def __getitem__(self, idx):
         img, target = super().__getitem__(idx)
+
+        label = target
 
         if self.train:
             if target in self.normal_classes:
