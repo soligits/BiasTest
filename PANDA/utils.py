@@ -675,12 +675,12 @@ class CUBAnomaly(Cub2011):
 
     def subset_classes(self, classes):
         # Filter data
-        subclasses = classes
-        subset_data = self.data[self.data["target"].isin(subclasses)]
+        subclasses = np.array(classes)
+        subset_data = self.data[self.data["target"].isin(subclasses + 1)]
         self.data = subset_data
 
         # Update attributes
-        self.class_names = [self.class_names[i] for i in subclasses]
+        self.class_names = [self.class_names[i] for i in subclasses.tolist()]
 
     @property
     def num_classes(self):
