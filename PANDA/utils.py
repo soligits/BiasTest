@@ -141,7 +141,7 @@ def get_test_dataset(dataset, normal_labels, path):
         return get_SVHN_test(normal_labels, path)
     elif dataset == "mvtec":
         return get_MVTEC_test(normal_labels, path)
-    elif dataset == "mvtec":
+    elif dataset == "cub":
         return get_CUB_test(normal_labels, path)
     else:
         raise Exception("Target Dataset is not supported yet. ")
