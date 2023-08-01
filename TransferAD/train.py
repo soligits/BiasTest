@@ -2,7 +2,9 @@ import torch
 import torch.nn as nn
 import torchvision
 
-import functools; print = functools.partial(print, flush=True)
+import functools
+
+print = functools.partial(print, flush=True)
 import numpy as np
 import os
 import time
@@ -12,7 +14,7 @@ from nn.resnet import resnet26
 from sklearn.metrics import average_precision_score, roc_auc_score
 from util.helpers.log import Log
 from util.helpers.setup import checkpoint, make_dirs, newline, save_model_info, to_gpu
-from util.benchmark import cifar10
+from util.benchmark import load_dataset
 from util.parser import get_default_parser
 
 to_list = lambda t: t.cpu().data.numpy().tolist()
@@ -27,10 +29,7 @@ def main():
     make_dirs(config.ckpt_path)
     out = open(os.path.join(config.ckpt_path, "console.out"), "w")
 
-    if config.dataset == "cifar10":
-        train_loader, oe_loader, val_loader = cifar10(config)
-    else:
-        raise NotImplementedError
+    train_loader, oe_loader, val_loader = load_dataset(config)
 
     save_model_info(config, file=out)
 
@@ -39,15 +38,19 @@ def main():
 
     if config.model == "adib":
         theta_0 = f.params()
-    
-    loss = nn.BCEWithLogitsLoss()    
-    optim = torch.optim.SGD(filter(lambda p: p.requires_grad, f.parameters()),
+
+    loss = nn.BCEWithLogitsLoss()
+    optim = torch.optim.SGD(
+        filter(lambda p: p.requires_grad, f.parameters()),
         lr=config.lr_sgd,
         momentum=config.momentum_sgd,
-        weight_decay=config.weight_decay)
-    sched = torch.optim.lr_scheduler.MultiStepLR(optim,
+        weight_decay=config.weight_decay,
+    )
+    sched = torch.optim.lr_scheduler.MultiStepLR(
+        optim,
         milestones=list(map(int, config.milestones.split(","))),
-        gamma=config.gamma)
+        gamma=config.gamma,
+    )
 
     log = Log(file=out)
     log.register("time", format="{0:.4f}")
@@ -58,7 +61,6 @@ def main():
 
     for epoch in range(config.num_epochs):
         for i, batch in enumerate(zip(train_loader, oe_loader)):
-
             f.train()
             f.zero_grad()
 
@@ -89,7 +91,6 @@ def main():
 
         with torch.no_grad():
             for i, batch in enumerate(val_loader):
-
                 f.eval()
 
                 x, labels = batch
