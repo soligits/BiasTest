@@ -216,12 +216,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=128, type=int)
     parser.add_argument(
         "--backbone",
-        choices=[
-            "18",
-            "50",
-            "152",
-            "resnet18_linf_eps8.0",
-        ],
+        choices=["18", "50", "152", "resnet18_linf_eps8.0", "vit"],
         default="18",
         type=str,
         help="ResNet Backbone",
