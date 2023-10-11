@@ -5,7 +5,7 @@ from util.datasets import get_datasets, CIFAR100OE
 
 def load_dataset(config):
     trainset, testset = get_datasets(
-        config.dataset, config.normal_classes, config.data_path
+        config.dataset, config.normal_class, config.data_path
     )
 
     cifar100 = CIFAR100OE(root=config.data_path)
