@@ -117,7 +117,7 @@ class Transform:
 
 
 class Model(torch.nn.Module):
-    def __init__(self, backbone="18"):
+    def __init__(self, backbone="18", path="./pretrained_models/"):
         super().__init__()
         self.norm = lambda x: (x - mu) / std
         if backbone == "152":
@@ -126,17 +126,11 @@ class Model(torch.nn.Module):
             self.backbone = models.resnet50(pretrained=True)
         elif backbone == "18":
             self.backbone = models.resnet18(pretrained=True)
-        elif backbone == "vit":
-            self.backbone = models.vit_b_16(pretrained=True)
         else:
-            self.backbone = RobustModel(arch=backbone)
+            self.backbone = RobustModel(path=path, arch=backbone).model
 
-        if "vit" in backbone:
-            self.backbone.heads = torch.nn.Identity()
-        else:
-            self.backbone.fc = torch.nn.Identity()
-
-        # freeze_parameters(self.backbone, backbone, train_fc=False)
+        self.backbone.fc = torch.nn.Identity()
+        freeze_parameters(self.backbone, backbone, train_fc=False)
 
     def forward(self, x):
         x = self.norm(x)
@@ -146,23 +140,22 @@ class Model(torch.nn.Module):
 
 
 robust_urls = {
-    "resnet18_linf_eps0.5": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/resnet18_linf_eps0.5.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "resnet18_linf_eps1.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/resnet18_linf_eps1.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "resnet18_linf_eps2.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/resnet18_linf_eps2.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "resnet18_linf_eps4.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/resnet18_linf_eps4.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "resnet18_linf_eps8.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/resnet18_linf_eps8.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "resnet50_linf_eps0.5": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/resnet50_linf_eps0.5.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "resnet50_linf_eps1.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/resnet50_linf_eps1.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "resnet50_linf_eps2.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/resnet50_linf_eps2.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "resnet50_linf_eps4.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/resnet50_linf_eps4.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "resnet50_linf_eps8.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/resnet50_linf_eps8.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "wide_resnet50_2_linf_eps0.5": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/wide_resnet50_2_linf_eps0.5.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "wide_resnet50_2_linf_eps1.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/wide_resnet50_2_linf_eps1.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "wide_resnet50_2_linf_eps2.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/wide_resnet50_2_linf_eps2.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "wide_resnet50_2_linf_eps4.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/wide_resnet50_2_linf_eps4.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
-    "wide_resnet50_2_linf_eps8.0": "https://robustnessws4285631339.blob.core.windows.net/public-models/robust_imagenet/wide_resnet50_2_linf_eps8.0.ckpt?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2051-10-06T07:09:59Z&st=2021-10-05T23:09:59Z&spr=https,http&sig=U69sEOSMlliobiw8OgiZpLTaYyOA5yt5pHHH5%2FKUYgI%3D",
+    "resnet18_linf_eps0.5": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/resnet18_linf_eps0.5.ckpt",
+    "resnet18_linf_eps1.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/resnet18_linf_eps1.0.ckpt",
+    "resnet18_linf_eps2.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/resnet18_linf_eps2.0.ckpt",
+    "resnet18_linf_eps4.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/resnet18_linf_eps4.0.ckpt",
+    "resnet18_linf_eps8.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/resnet18_linf_eps8.0.ckpt",
+    "resnet50_linf_eps0.5": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/resnet50_linf_eps0.5.ckpt",
+    "resnet50_linf_eps1.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/resnet50_linf_eps1.0.ckpt",
+    "resnet50_linf_eps2.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/resnet50_linf_eps2.0.ckpt",
+    "resnet50_linf_eps4.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/resnet50_linf_eps4.0.ckpt",
+    "resnet50_linf_eps8.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/resnet50_linf_eps8.0.ckpt",
+    "wide_resnet50_2_linf_eps0.5": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/wide_resnet50_2_linf_eps0.5.ckpt",
+    "wide_resnet50_2_linf_eps1.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/wide_resnet50_2_linf_eps1.0.ckpt",
+    "wide_resnet50_2_linf_eps2.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/wide_resnet50_2_linf_eps2.0.ckpt",
+    "wide_resnet50_2_linf_eps4.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/wide_resnet50_2_linf_eps4.0.ckpt",
+    "wide_resnet50_2_linf_eps8.0": "https://huggingface.co/madrylab/robust-imagenet-models/resolve/main/wide_resnet50_2_linf_eps8.0.ckpt",
 }
-
 
 class RobustModel(torch.nn.Module):
     def __init__(self, arch="resnet50_linf_eps2.0", path="./pretrained_models/"):
@@ -220,7 +213,6 @@ def freeze_parameters(model, backbone, train_fc=False):
             p.requires_grad = False
         for p in model.layer2.parameters():
             p.requires_grad = False
-
 
 def knn_score(train_set, test_set, n_neighbours=2):
     """

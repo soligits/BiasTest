@@ -47,6 +47,11 @@ def parse_args(default=False):
     parser.add_argument(
         "--no_strict", help="Do not strictly load state_dicts", action="store_true"
     )
+    
+    parser.add_argument(
+        "--pretrained",  action="store_true"
+    )
+    
     parser.add_argument(
         "--suffix", help="Suffix for the log dir", default=None, type=str
     )
