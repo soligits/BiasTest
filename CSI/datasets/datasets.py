@@ -214,9 +214,14 @@ def get_dataset(
 
     elif dataset == "svhn":
         assert test_only and image_size is not None
+        train_set = datasets.SVHN(
+            DATA_PATH, split="train", download=download, transform=test_transform
+        )
+        train_set.targets = train_set.labels
         test_set = datasets.SVHN(
             DATA_PATH, split="test", download=download, transform=test_transform
         )
+        train_set.targets = train_set.labels
 
     elif dataset == "lsun_resize":
         assert test_only and image_size is not None
