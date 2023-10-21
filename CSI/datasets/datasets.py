@@ -259,7 +259,8 @@ def get_dataset(
         )
 
     elif dataset == "svhn":
-        assert test_only and image_size is not None
+        image_size = (32, 32, 3)
+        n_classes = 10
         train_set = datasets.SVHN(
             DATA_PATH, split="train", download=download, transform=test_transform
         )
@@ -270,6 +271,8 @@ def get_dataset(
         train_set.targets = train_set.labels
     
     elif dataset == "mvtec":
+        image_size = (224, 224, 3)
+        n_classes = 15
         train_dataset = []
         test_dataset = []
         CLASS_NAMES = ['toothbrush', 'zipper', 'transistor', 'tile', 'grid', 'wood', 'pill', 'bottle', 'capsule', 'metal_nut', 'hazelnut', 'screw', 'carpet', 'leather', 'cable']
