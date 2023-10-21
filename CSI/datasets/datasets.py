@@ -272,21 +272,29 @@ def get_dataset(
         test_set = datasets.SVHN(
             DATA_PATH, split="test", download=download, transform=test_transform
         )
-        train_set.targets = train_set.labels
+        test_set.targets = test_set.labels
     
     elif dataset == "mvtec":
         image_size = (224, 224, 3)
         n_classes = 15
         train_dataset = []
         test_dataset = []
+        train_targets = []
+        test_targets = []
         CLASS_NAMES = ['toothbrush', 'zipper', 'transistor', 'tile', 'grid', 'wood', 'pill', 'bottle', 'capsule', 'metal_nut', 'hazelnut', 'screw', 'carpet', 'leather', 'cable']
         for i, cat in enumerate(CLASS_NAMES):
             if i in P.one_class_idx:
-                train_dataset.append(MVTecDataset(root='data/mvtec_anomaly_detection', train=True, category=cat, transform=train_transform, count=-1))
-                test_dataset.append(MVTecDataset(root='data/mvtec_anomaly_detection', train=False, category=cat, transform=test_transform, count=-1))
+                tr = MVTecDataset(root='data/mvtec_anomaly_detection', train=True, category=cat, transform=train_transform, count=-1)
+                te = MVTecDataset(root='data/mvtec_anomaly_detection', train=False, category=cat, transform=test_transform, count=-1)
+                train_dataset.append(tr)
+                test_dataset.append(te)
+                train_targets += tr.targets
+                test_targets += te.targets
 
         train_set = ConcatDataset(train_dataset)
+        train_set.targets = train_targets
         test_set = ConcatDataset(test_dataset)
+        test_set.targets = test_targets
 
     elif dataset == "lsun_resize":
         assert test_only and image_size is not None
