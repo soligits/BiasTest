@@ -58,6 +58,10 @@ IMAGENET_PATH = "~/data/ImageNet"
 
 
 CIFAR10_SUPERCLASS = list(range(10))  # one class
+SVHN_SUPERCLASS = list(range(10))
+MNIST_SUPERCLASS = list(range(10))
+FASHION_SUPERCLASS = list(range(10))
+MVTEC_SUPERCLASS = list(range(15))
 IMAGENET_SUPERCLASS = list(range(30))  # one class
 
 CIFAR100_SUPERCLASS = [
@@ -376,6 +380,15 @@ def get_superclass_list(dataset):
         return CIFAR100_SUPERCLASS
     elif dataset == "imagenet":
         return IMAGENET_SUPERCLASS
+    elif dataset == 'fashion':
+        return FASHION_SUPERCLASS
+    elif dataset == 'mnist':
+        return MNIST_SUPERCLASS
+    elif dataset == 'mvtec':
+        return MVTEC_SUPERCLASS
+    elif dataset == 'svhn':
+        return SVHN_SUPERCLASS
+    
     else:
         raise NotImplementedError()
 
