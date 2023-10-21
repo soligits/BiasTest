@@ -7,6 +7,52 @@ from torchvision import datasets, transforms
 
 from utils.utils import set_random_seed
 
+from glob import glob
+from torch.utils.data import Dataset, ConcatDataset
+import os
+import random
+from PIL import Image
+
+class MVTecDataset(Dataset):
+    def __init__(self, root, category, transform=None, train=True, count=-1):
+        self.transform = transform
+        self.image_files = []
+        if train:
+            self.image_files = glob(os.path.join(root, category, "train", "good", "*.png"))
+        else:
+            image_files = glob(os.path.join(root, category, "test", "*", "*.png"))
+            normal_image_files = glob(os.path.join(root, category, "test", "good", "*.png"))
+            anomaly_image_files = list(set(image_files) - set(normal_image_files))
+            self.image_files = image_files
+        if count != -1:
+            if count<len(self.image_files):
+                self.image_files = self.image_files[:count]
+            else:
+                t = len(self.image_files)
+                for i in range(count-t):
+                    self.image_files.append(random.choice(self.image_files[:t]))
+        self.image_files.sort(key=lambda y: y.lower())
+        self.train = train
+        self.targets = []
+        for image_file in self.image_files:
+            if os.path.dirname(image_file).endswith("good"):
+                target = 0
+            else:
+                target = 1
+            self.targets.append(target)
+
+    def __getitem__(self, index):
+        image_file = self.image_files[index]
+        image = Image.open(image_file)
+        image = image.convert('RGB')
+        if self.transform is not None:
+            image = self.transform(image)
+        target = self.targets[index]
+        return image, target
+
+    def __len__(self):
+        return len(self.image_files)
+
 DATA_PATH = "~/data/"
 IMAGENET_PATH = "~/data/ImageNet"
 
@@ -222,6 +268,18 @@ def get_dataset(
             DATA_PATH, split="test", download=download, transform=test_transform
         )
         train_set.targets = train_set.labels
+    
+    elif dataset == "mvtec":
+        train_dataset = []
+        test_dataset = []
+        CLASS_NAMES = ['toothbrush', 'zipper', 'transistor', 'tile', 'grid', 'wood', 'pill', 'bottle', 'capsule', 'metal_nut', 'hazelnut', 'screw', 'carpet', 'leather', 'cable']
+        for i, cat in enumerate(CLASS_NAMES):
+            if i in P.one_class_idx:
+                train_dataset.append(MVTecDataset(root='data/mvtec_anomaly_detection', train=True, category=cat, transform=train_transform, count=-1))
+                test_dataset.append(MVTecDataset(root='data/mvtec_anomaly_detection', train=False, category=cat, transform=test_transform, count=-1))
+
+        train_set = ConcatDataset(train_dataset)
+        test_set = ConcatDataset(test_dataset)
 
     elif dataset == "lsun_resize":
         assert test_only and image_size is not None

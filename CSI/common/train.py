@@ -49,6 +49,9 @@ if P.one_class_idx is not None:
     P.n_superclasses = len(cls_list)
 
     full_test_set = deepcopy(test_set)  # test set of full classes
+
+    if P.dataset == 'mvtec':
+        P.one_class_idx = [0]
     train_set = get_subclass_dataset(train_set, classes=P.one_class_idx)
     test_set = get_subclass_dataset(test_set, classes=P.one_class_idx)
 
@@ -77,7 +80,10 @@ else:
 
 if P.ood_dataset is None:
     if P.one_class_idx is not None:
-        P.ood_dataset = [c for c in range(P.n_superclasses) if c not in P.one_class_idx]
+        if P.dataset == 'mvtec':
+            P.ood_dataset = [1]
+        else:            
+            P.ood_dataset = [c for c in range(P.n_superclasses) if c not in P.one_class_idx]
     elif P.dataset == "cifar10":
         P.ood_dataset = [
             "svhn",
