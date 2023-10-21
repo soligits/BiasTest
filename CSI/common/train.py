@@ -51,9 +51,11 @@ if P.one_class_idx is not None:
     full_test_set = deepcopy(test_set)  # test set of full classes
 
     if P.dataset == 'mvtec':
-        P.one_class_idx = [0]
-    train_set = get_subclass_dataset(train_set, classes=P.one_class_idx)
-    test_set = get_subclass_dataset(test_set, classes=P.one_class_idx)
+        train_set = get_subclass_dataset(train_set, classes=[0])
+        test_set = get_subclass_dataset(test_set, classes=[1])
+    else:
+        train_set = get_subclass_dataset(train_set, classes=P.one_class_idx)
+        test_set = get_subclass_dataset(test_set, classes=P.one_class_idx)
 
 kwargs = {"pin_memory": False, "num_workers": 4}
 
