@@ -298,7 +298,24 @@ def get_dataset(
         train_set.targets = train_targets
         test_set = ConcatDataset(test_dataset)
         test_set.targets = test_targets
+    
 
+    elif dataset == 'dtd':
+        image_size = (32, 32, 3)
+        n_classes = 47
+        test_transform = transforms.Compose([
+            transforms.Resize((image_size[0], image_size[1])),
+            transforms.ToTensor(),
+        ])
+        train_transform = transforms.Compose([
+            transforms.Resize((image_size[0], image_size[1])),
+            transforms.ToTensor(),
+        ])
+        train_set = datasets.DTD('./data', split="train", download=True, transform=train_transform)
+        test_set = datasets.DTD('./data', split="test", download=True, transform=test_transform)
+        train_set.targets = train_set._labels
+        test_set.targets = test_set._labels
+        
     elif dataset == "lsun_resize":
         assert test_only and image_size is not None
         test_dir = os.path.join(DATA_PATH, "LSUN_resize")
