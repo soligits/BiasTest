@@ -302,19 +302,11 @@ def get_dataset(
 
     elif dataset == 'dtd':
         image_size = (32, 32, 3)
-        n_classes = 47
-        test_transform = transforms.Compose([
-            transforms.Resize((image_size[0], image_size[1])),
-            transforms.ToTensor(),
-        ])
-        train_transform = transforms.Compose([
-            transforms.Resize((image_size[0], image_size[1])),
-            transforms.ToTensor(),
-        ])
         train_set = datasets.DTD('./data', split="train", download=True, transform=train_transform)
         test_set = datasets.DTD('./data', split="test", download=True, transform=test_transform)
         train_set.targets = train_set._labels
         test_set.targets = test_set._labels
+        n_classes = len(train_set.classes)
         
     elif dataset == "lsun_resize":
         assert test_only and image_size is not None
