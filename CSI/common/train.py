@@ -80,7 +80,10 @@ else:
         test_set, shuffle=False, batch_size=P.test_batch_size, **kwargs
     )
 
-print(next(iter(train_loader)))
+_x = next(iter(train_loader))[0]
+print(_x.shape)
+print(type(_x))
+print(len(_x))
 
 if P.ood_dataset is None:
     if P.one_class_idx is not None:
