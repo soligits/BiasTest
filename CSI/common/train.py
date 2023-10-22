@@ -80,6 +80,8 @@ else:
         test_set, shuffle=False, batch_size=P.test_batch_size, **kwargs
     )
 
+print(next(iter(train_loader)))
+
 if P.ood_dataset is None:
     if P.one_class_idx is not None:
         if P.dataset == 'mvtec':
