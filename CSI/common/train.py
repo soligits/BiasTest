@@ -81,8 +81,7 @@ else:
     )
 
 _x = next(iter(train_loader))[0]
-print(_x.shape)
-print(type(_x))
+print(_x.__len__())
 print(len(_x))
 
 if P.ood_dataset is None:
