@@ -34,8 +34,6 @@ for epoch in range(start_epoch, P.epochs + 1):
     kwargs['linear_optim'] = linear_optim
     kwargs['simclr_aug'] = simclr_aug
 
-    if P.dataset == 'mvtec':
-        P.dataset = 'imagenet'
     train(P, epoch, model, criterion, optimizer, scheduler_warmup, train_loader, logger=logger, **kwargs)
 
     model.eval()

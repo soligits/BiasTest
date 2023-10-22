@@ -42,8 +42,6 @@ elif P.mode in ["ood", "ood_pre"]:
 
     with torch.no_grad():
 
-        if P.dataset == 'mvtec':
-            P.dataset = 'imagenet'
         auroc_dict = eval_ood_detection(
             P,
             model,
