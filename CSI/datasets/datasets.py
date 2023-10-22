@@ -212,7 +212,8 @@ def get_dataset(
         "food_101",
         "caltech_256",
         "dtd",
-        "pets"
+        "pets",
+        "mvtec"
     ]:
         if eval:
             train_transform, test_transform = get_simclr_eval_transform_imagenet(
@@ -220,8 +221,6 @@ def get_dataset(
             )
         else:
             train_transform, test_transform = get_transform_imagenet()
-    elif dataset == 'mvtec':
-        train_transform, test_transform = get_transform_imagenet()
     else:
         train_transform, test_transform = get_transform(image_size=image_size)
 

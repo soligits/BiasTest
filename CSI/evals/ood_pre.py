@@ -142,7 +142,7 @@ def get_features(P, data_name, model, loader, interp=False, prefix='',
 
     # pre-compute features and save to the path
     left = [layer for layer in layers if layer not in feats_dict.keys()]
-    imagenet = P.dataset == 'imagenet'
+    imagenet = P.dataset in ['imagenet', 'mvtec', 'dtd']
     if len(left) > 0:
         _feats_dict = _get_features(P, model, loader, interp, imagenet,
                                     simclr_aug, sample_num, layers=left)
@@ -177,7 +177,7 @@ def _get_features(P, model, loader, interp=False, imagenet=False, simclr_aug=Non
             x = x_interp  # use interp as current batch
 
         if imagenet is True:
-            x = torch.cat(x[0], dim=0)  # augmented list of x
+            x = x[0]
 
         x = x.to(device)  # gpu tensor
 
