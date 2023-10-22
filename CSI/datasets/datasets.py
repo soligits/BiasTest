@@ -63,6 +63,7 @@ MNIST_SUPERCLASS = list(range(10))
 FASHION_SUPERCLASS = list(range(10))
 MVTEC_SUPERCLASS = list(range(15))
 IMAGENET_SUPERCLASS = list(range(30))  # one class
+DTD_SUPERCLASS = list(range(47))
 
 CIFAR100_SUPERCLASS = [
     [4, 31, 55, 72, 95],
@@ -408,7 +409,8 @@ def get_superclass_list(dataset):
         return MVTEC_SUPERCLASS
     elif dataset == 'svhn':
         return SVHN_SUPERCLASS
-    
+    elif dataset == 'dtd':
+        return DTD_SUPERCLASS
     else:
         raise NotImplementedError()
 
