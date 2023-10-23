@@ -53,7 +53,7 @@ test_loader = DataLoader(
 
 
 _x = next(iter(train_loader))[0]
-print(type(_x[0]))
+print(_x[0])
 print(len(_x[0]))
 
 if P.ood_dataset is None:
