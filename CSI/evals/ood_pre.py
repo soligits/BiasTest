@@ -179,8 +179,6 @@ def _get_features(P, model, loader, interp=False, imagenet=False, simclr_aug=Non
         if imagenet is True:
             x = torch.cat(x[0], dim=0)
 
-        x = x.to(device)  # gpu tensor
-
         # compute features in one batch
         feats_batch = {layer: [] for layer in layers}  # initialize: empty list
         for seed in range(sample_num):
@@ -197,8 +195,9 @@ def _get_features(P, model, loader, interp=False, imagenet=False, simclr_aug=Non
                 kwargs = {layer: True for layer in layers}  # only forward selected layers
                 output_aux = []
                 for x_s in x_t:
+                    x_s = x_s.unsqueeze(0).to(device)
                     output_aux.append(model(x_s, **kwargs)[1].cpu())
-                output_aux = torch.cat(output_aux, dim=1)
+                output_aux = torch.cat(output_aux, dim=0)
                 print(output_aux.shape)
                 # _, output_aux = model(x_t, **kwargs)
 
