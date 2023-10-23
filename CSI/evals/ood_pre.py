@@ -193,13 +193,17 @@ def _get_features(P, model, loader, interp=False, imagenet=False, simclr_aug=Non
             # compute augmented features
             with torch.no_grad():
                 kwargs = {layer: True for layer in layers}  # only forward selected layers
-                output_aux = []
-                for x_s in x_t:
-                    x_s = x_s.unsqueeze(0).to(device)
-                    output_aux.append(model(x_s, **kwargs)[1].cpu())
-                output_aux = torch.cat(output_aux, dim=0)
-                print(output_aux.shape)
-                # _, output_aux = model(x_t, **kwargs)
+                # output_aux = []
+                # for x_s in x_t:
+                #     x_s = x_s.unsqueeze(0).to(device)
+                #     out_s = model(x_s, **kwargs)[1]
+                #     for k, v in out_s:
+                #         out_s[k] = v.cpu()
+                #     output_aux.append(out_s)
+                # for k, v
+                # output_aux = torch.cat(output_aux, dim=0)
+                # print(output_aux.shape)
+                _, output_aux = model(x_t, **kwargs)
 
             # add features in one batch
             for layer in layers:
