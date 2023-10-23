@@ -178,6 +178,7 @@ def _get_features(P, model, loader, interp=False, imagenet=False, simclr_aug=Non
 
         if imagenet is True:
             x = torch.cat(x[0], dim=0)
+        x = x.to(device)
 
         # compute features in one batch
         feats_batch = {layer: [] for layer in layers}  # initialize: empty list
@@ -188,7 +189,8 @@ def _get_features(P, model, loader, interp=False, imagenet=False, simclr_aug=Non
                 x_t = torch.cat([P.shift_trans(hflip(x), k) for k in range(P.K_shift)])
             else:
                 x_t = x # No shifting: SimCLR
-            x_t = simclr_aug(x_t.to(device)).cpu()
+            # x_t = simclr_aug(x_t.to(device)).cpu()
+            x_t = simclr_aug(x_t)
 
             # compute augmented features
             with torch.no_grad():
