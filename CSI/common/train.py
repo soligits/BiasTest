@@ -52,7 +52,7 @@ if P.one_class_idx is not None:
 
     if P.dataset == 'mvtec':
         train_set = get_subclass_dataset(train_set, classes=[0])
-        test_set = get_subclass_dataset(test_set, classes=[1])
+        test_set = get_subclass_dataset(test_set, classes=[0])
     else:
         train_set = get_subclass_dataset(train_set, classes=P.one_class_idx)
         test_set = get_subclass_dataset(test_set, classes=P.one_class_idx)
@@ -80,9 +80,6 @@ else:
         test_set, shuffle=False, batch_size=P.test_batch_size, **kwargs
     )
 
-_x = next(iter(train_loader))[0]
-print(_x.__len__())
-print(len(_x))
 
 if P.ood_dataset is None:
     if P.one_class_idx is not None:
