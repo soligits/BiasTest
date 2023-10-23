@@ -177,7 +177,7 @@ def _get_features(P, model, loader, interp=False, imagenet=False, simclr_aug=Non
             x = x_interp  # use interp as current batch
 
         if imagenet is True:
-            x = x[0]
+            x = torch.cat(x[0], dim=0)
 
         x = x.to(device)  # gpu tensor
 

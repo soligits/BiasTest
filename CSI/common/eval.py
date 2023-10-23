@@ -52,10 +52,6 @@ test_loader = DataLoader(
 )
 
 
-_x = next(iter(train_loader))[0]
-print(_x[0])
-print(len(_x[0]))
-
 if P.ood_dataset is None:
     if P.one_class_idx is not None:
         if P.dataset == 'mvtec':
