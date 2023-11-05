@@ -36,7 +36,7 @@ def calculate_average_auc(train_loader, test_loader, model, device, csv_path):
     if isinstance(test_loader, list):
         for test_set in test_loader:
             auc, _ = get_score(model, device, train_loader, test_set)
-            dataset_name = str(test_set)
+            dataset_name = str(test_set.dataset)
             aucs.append(auc)
             auc_dict[dataset_name] = auc
             print("AUC for {}: {}".format(dataset_name, auc))
