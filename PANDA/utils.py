@@ -224,7 +224,7 @@ CIFAR_CORRUPTION_TYPES = [
     'zoom_blur'
 ]
 
-class CIFAR_CORRUPTION(Dataset):
+class CIFAR_CORRUPTION(torch.utils.data.Dataset):
     def __init__(self, transform=None, normal_class_labels = [], cifar_corruption_label = 'CIFAR-10-C/labels.npy', cifar_corruption_data = './CIFAR-10-C/defocus_blur.npy'):
         self.labels_10 = np.load(cifar_corruption_label)
         self.labels_10 = self.labels_10[:10000]
@@ -269,7 +269,7 @@ MNIST_CORRUPTION_TYPES = [
     "translate",
     "zigzag"
 ]
-class MNIST_CORRUPTION(Dataset):
+class MNIST_CORRUPTION(torch.utils.data.Dataset):
     def __init__(self, root_dir, corruption_type, transform=None, normal_class_labels=[]):
         self.root_dir = root_dir
         self.transform = transform
@@ -315,7 +315,7 @@ class MNIST_CORRUPTION(Dataset):
         return image, label
 
 
-class FMNIST_CORRUPTION(Dataset):
+class FMNIST_CORRUPTION(torch.utils.data.Dataset):
     def __init__(self, split='test', transform=None, normal_class_labels=[]):
         from datasets import load_dataset
         # Check if split is valid
