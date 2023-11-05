@@ -147,8 +147,9 @@ def get_test_dataset(dataset, normal_labels, path):
         concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
         
         torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
-        subset_indices = torch.randperm(len(concated_testset))[:10000]  
-        return torch.utils.data.Subset(concated_testset, subset_indices)
+        return concated_testset
+        # subset_indices = torch.randperm(len(concated_testset))[:10000]  
+        # return torch.utils.data.Subset(concated_testset, subset_indices)
     elif dataset == "cifar100":
         return get_CIFAR100_test(normal_labels, path)
     elif dataset == "cifar100-c":
@@ -167,8 +168,9 @@ def get_test_dataset(dataset, normal_labels, path):
         concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
         
         torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
-        subset_indices = torch.randperm(len(concated_testset))[:10000]  
-        return torch.utils.data.Subset(concated_testset, subset_indices)
+        return concated_testset
+        # subset_indices = torch.randperm(len(concated_testset))[:10000]  
+        # return torch.utils.data.Subset(concated_testset, subset_indices)
     elif dataset == "mnist":
         return get_MNIST_test(normal_labels, path)
     elif dataset == "mnist-c":
@@ -185,10 +187,10 @@ def get_test_dataset(dataset, normal_labels, path):
             
         # Use ConcatDataset to concatenate all the datasets
         concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
-        
-        torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
-        subset_indices = torch.randperm(len(concated_testset))[:10000]  
-        return torch.utils.data.Subset(concated_testset, subset_indices)
+        return concated_testset
+        # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
+        # subset_indices = torch.randperm(len(concated_testset))[:10000]  
+        # return torch.utils.data.Subset(concated_testset, subset_indices)
     elif dataset == "fashion":
         return get_FASHION_MNIST_test(normal_labels, path)
     elif dataset == "fashion-c":
