@@ -236,6 +236,7 @@ class CIFAR_CORRUPTION(torch.utils.data.Dataset):
     def __init__(self, transform=None, normal_class_labels = [], cifar_corruption_label = 'CIFAR-10-C/labels.npy', cifar_corruption_data = './CIFAR-10-C/defocus_blur.npy'):
         self.labels_10 = np.load(cifar_corruption_label)
         self.labels_10 = self.labels_10[:10000]
+        self.cifar_corruption_data = cifar_corruption_data
         if cifar_corruption_label == 'CIFAR-100-C/labels.npy':
             self.labels_10 = sparse2coarse(self.labels_10)
             
