@@ -144,10 +144,10 @@ def get_test_dataset(dataset, normal_labels, path):
             concatenated_datasets.append(dataset_instance)
 
         # Use ConcatDataset to concatenate all the datasets
-        concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
+        # concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
         
-        torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
-        return concated_testset
+        # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
+        return concatenated_datasets
         # subset_indices = torch.randperm(len(concated_testset))[:10000]  
         # return torch.utils.data.Subset(concated_testset, subset_indices)
     elif dataset == "cifar100":
@@ -165,10 +165,10 @@ def get_test_dataset(dataset, normal_labels, path):
             concatenated_datasets.append(dataset_instance)
 
         # Use ConcatDataset to concatenate all the datasets
-        concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
+        # concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
         
-        torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
-        return concated_testset
+        # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
+        return concatenated_datasets
         # subset_indices = torch.randperm(len(concated_testset))[:10000]  
         # return torch.utils.data.Subset(concated_testset, subset_indices)
     elif dataset == "mnist":
@@ -186,8 +186,8 @@ def get_test_dataset(dataset, normal_labels, path):
             concatenated_datasets.append(dataset_instance)
             
         # Use ConcatDataset to concatenate all the datasets
-        concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
-        return concated_testset
+        # concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
+        return concatenated_datasets
         # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
         # subset_indices = torch.randperm(len(concated_testset))[:10000]  
         # return torch.utils.data.Subset(concated_testset, subset_indices)
@@ -250,6 +250,9 @@ class CIFAR_CORRUPTION(torch.utils.data.Dataset):
     
     def __len__(self):
         return len(self.data)
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}(corruption_type={self.cifar_corruption_data})"
 
 import shutil
 
@@ -315,6 +318,9 @@ class MNIST_CORRUPTION(torch.utils.data.Dataset):
         label = 0 if label in self.normal_class_labels else 1
         
         return image, label
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}(corruption_type={self.corruption_type})"
 
 
 class FMNIST_CORRUPTION(torch.utils.data.Dataset):
