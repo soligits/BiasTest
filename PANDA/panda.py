@@ -29,19 +29,19 @@ def append_auc_to_csv(auc_dict, csv_path):
     else:
         df_auc.to_csv(csv_path, mode='w', header=True, index=False)
 
-def calculate_average_auc(test_loader, model, device, csv_path):
+def calculate_average_auc(train_loader, test_loader, model, device, csv_path):
     aucs = []
     auc_dict = {}
     # Check if test_loader is a list of datasets
     if isinstance(test_loader, list):
         for test_set in test_loader:
-            auc, _ = get_score(model, device, None, test_set)
+            auc, _ = get_score(model, device, train_loader, test_set)
             dataset_name = str(test_set)
             aucs.append(auc)
             auc_dict[dataset_name] = auc
             print("AUC for {}: {}".format(dataset_name, auc))
     else:  # If it's a single dataset
-        auc, _ = get_score(model, device, None, test_loader)
+        auc, _ = get_score(model, device, train_loader, test_loader)
         aucs.append(auc)
         auc_dict['single_testset'] = auc
         print("AUC for the single test set: {}".format(auc))
@@ -72,7 +72,7 @@ def train_model(model, train_loader, test_loader, device, args, ewc_loss):
         print("Epoch: {}, Completed in {:.2f}s, Loss: {}".format(epoch + 1, epoch_time, running_loss))
         log_on_wandb({"train_loss": running_loss})
         
-    auc = calculate_average_auc(test_loader, model, device, f'{args.dataset}_{get_label_str(args.label)}_auc.csv')
+    auc = calculate_average_auc(train_loader, test_loader, model, device, f'{args.dataset}_{get_label_str(args.label)}_auc.csv')
     print("Epoch: {}, AUROC is: {}".format(epoch + 1, auc))
     
     log_on_wandb({"auc": auc})
