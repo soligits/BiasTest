@@ -269,7 +269,6 @@ MNIST_CORRUPTION_TYPES = [
     "dotted_line",
     "fog",
     "glass_blur",
-    "identity",
     "impulse_noise",
     "motion_blur",
     "rotate",
