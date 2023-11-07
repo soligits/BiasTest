@@ -139,7 +139,6 @@ def train_model(model, train_loader, test_loader, train_loader_1, device, args):
         log("Epoch: {}, Loss: {}".format(epoch + 1, running_loss))
 
     model.eval()
-    auc, _ = get_score(model, device, train_loader, test_loader)
     auc = calculate_average_auc(
         train_loader, test_loader, model, device, f'{args.dataset}_{get_label_str(args.label)}_auc.csv'
     )
