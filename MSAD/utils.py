@@ -245,9 +245,13 @@ def get_loaders(dataset, label_classes, batch_size, dataset_path, backbone):
         trainset_moco, batch_size=batch_size, shuffle=True, num_workers=2
     )
 
-    test_loader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=False, num_workers=2
-    )
+    test_loader = None
+    
+    if isinstance(testset, list):
+        print(f"Number of test sets: {len(testset)}")
+        test_loader = [torch.utils.data.DataLoader(ts, batch_size=batch_size, shuffle=False, num_workers=2) for ts in testset]
+    else:
+        test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=2)
 
     return train_loader, test_loader, train_loader_moco
 
