@@ -65,6 +65,42 @@ def log_on_wandb(results):
         print("Failed to Log Results on WANDB!")
 
 
+
+import time
+import os
+import pandas as pd
+
+def append_auc_to_csv(auc_dict, csv_path):
+    # Convert AUCs to DataFrame
+    df_auc = pd.DataFrame([auc_dict])
+    # Check if the CSV file exists
+    if os.path.exists(csv_path):
+        df_auc.to_csv(csv_path, mode='a', header=False, index=False)
+    else:
+        df_auc.to_csv(csv_path, mode='w', header=True, index=False)
+
+def calculate_average_auc(train_loader, test_loader, model, device, csv_path):
+    aucs = []
+    auc_dict = {}
+    # Check if test_loader is a list of datasets
+    if isinstance(test_loader, list):
+        for test_set in test_loader:
+            auc, _ = get_score(model, device, train_loader, test_set)
+            dataset_name = str(test_set.dataset)
+            aucs.append(auc)
+            auc_dict[dataset_name] = auc
+            print("AUC for {}: {}".format(dataset_name, auc))
+    else:  # If it's a single dataset
+        auc, _ = get_score(model, device, train_loader, test_loader)
+        aucs.append(auc)
+        auc_dict['single_testset'] = auc
+        print("AUC for the single test set: {}".format(auc))
+
+    # Append AUCs to CSV
+    append_auc_to_csv(auc_dict, csv_path)
+    return np.mean(aucs)
+
+
 def train_model(model, train_loader, test_loader, train_loader_1, device, args):
     model.eval()
 
@@ -80,7 +116,7 @@ def train_model(model, train_loader, test_loader, train_loader_1, device, args):
         file_name = f"{base_name}_{counter}.csv"
         counter += 1
 
-    auc, feature_space = get_score(model, device, train_loader, test_loader)
+    auc, feature_space = get_score(model, device, train_loader, test_loader if not isinstance(test_loader, list) else test_loader[0])
 
     log_on_wandb({"auc": auc})
     log("Epoch: {}, AUROC is: {}".format(0, auc))
@@ -102,13 +138,17 @@ def train_model(model, train_loader, test_loader, train_loader_1, device, args):
 
         log("Epoch: {}, Loss: {}".format(epoch + 1, running_loss))
 
-        model.eval()
-        auc, _ = get_score(model, device, train_loader, test_loader)
+    model.eval()
+    auc, _ = get_score(model, device, train_loader, test_loader)
+    auc = calculate_average_auc(
+        train_loader, test_loader, model, device, f'{args.dataset}_{get_label_str(args.label)}_auc.csv'
+    )
+    
+    log("Epoch: {}, AUROC is: {}".format(epoch + 1, auc))
 
-        log("Epoch: {}, AUROC is: {}".format(epoch + 1, auc))
-
-        csv_log(file_name, epoch + 1, running_loss, auc)
-        log_on_wandb({"train_loss": running_loss, "auc": auc})
+    csv_log(file_name, epoch + 1, running_loss, auc)
+    log_on_wandb({"train_loss": running_loss, "auc": auc})
+    
     try:
         wandb.finish()
     except:
