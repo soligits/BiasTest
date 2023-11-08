@@ -10,7 +10,7 @@ import pandas as pd
 from torchvision.datasets import VisionDataset
 from torchvision.datasets.folder import default_loader
 from torchvision.datasets.utils import download_file_from_google_drive
-
+import torchvision
 
 transform_color = transforms.Compose(
     [
@@ -49,7 +49,6 @@ class Model(torch.nn.Module):
         z1 = self.backbone(x)
         return z1
 
-
 def get_loaders(dataset, label_classes, batch_size, dataset_path):
     trainset = get_train_dataset(dataset, label_classes, dataset_path)
 
@@ -65,21 +64,27 @@ def get_loaders(dataset, label_classes, batch_size, dataset_path):
         trainset, batch_size=batch_size, shuffle=True, num_workers=2
     )
 
-    test_loader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=False, num_workers=2
-    )
+    
+    test_loader = None
+    
+    if isinstance(testset, list):
+        print(f"Number of test sets: {len(testset)}")
+        test_loader = [torch.utils.data.DataLoader(ts, batch_size=batch_size, shuffle=False, num_workers=2) for ts in testset]
+    else:
+        test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=2)
+
 
     return train_loader, test_loader
 
 
 def get_train_dataset(dataset, label_class, path):
-    if dataset == "cifar10":
+    if dataset == "cifar10" or dataset == "cifar10-c":
         return get_CIFAR10_train(label_class, path)
-    elif dataset == "cifar100":
+    elif dataset == "cifar100" or dataset == "cifar100-c":
         return get_CIFAR100_train(label_class, path)
-    elif dataset == "mnist":
+    elif dataset == "mnist" or dataset == "mnist-c":
         return get_MNIST_train(label_class, path)
-    elif dataset == "fashion":
+    elif dataset == "fashion" or dataset == "fashion-c":
         return get_FASHION_MNIST_train(label_class, path)
     elif dataset == "svhn":
         return get_SVHN_train(label_class, path)
@@ -95,12 +100,70 @@ def get_train_dataset(dataset, label_class, path):
 def get_test_dataset(dataset, normal_labels, path):
     if dataset == "cifar10":
         return get_CIFAR10_test(normal_labels, path)
+    elif dataset == "cifar10-c":
+        concatenated_datasets = [] 
+        for corruption_type in CIFAR_CORRUPTION_TYPES:
+            # Create a dataset instance for each corruption type
+            dataset_instance = CIFAR_CORRUPTION(
+                transform=transform_color, 
+                normal_class_labels=normal_labels, 
+                cifar_corruption_label='CIFAR-10-C/labels.npy', 
+                cifar_corruption_data=f'CIFAR-10-C/{corruption_type}.npy'
+            )
+            concatenated_datasets.append(dataset_instance)
+
+        # Use ConcatDataset to concatenate all the datasets
+        # concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
+        
+        # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
+        return concatenated_datasets
+        # subset_indices = torch.randperm(len(concated_testset))[:10000]  
+        # return torch.utils.data.Subset(concated_testset, subset_indices)
     elif dataset == "cifar100":
         return get_CIFAR100_test(normal_labels, path)
+    elif dataset == "cifar100-c":
+        concatenated_datasets = [] 
+        for corruption_type in CIFAR_CORRUPTION_TYPES:
+            # Create a dataset instance for each corruption type
+            dataset_instance = CIFAR_CORRUPTION(
+                transform=transform_color, 
+                normal_class_labels=normal_labels, 
+                cifar_corruption_label='CIFAR-100-C/labels.npy', 
+                cifar_corruption_data=f'CIFAR-100-C/{corruption_type}.npy'
+            )
+            concatenated_datasets.append(dataset_instance)
+
+        # Use ConcatDataset to concatenate all the datasets
+        # concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
+        
+        # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
+        return concatenated_datasets
+        # subset_indices = torch.randperm(len(concated_testset))[:10000]  
+        # return torch.utils.data.Subset(concated_testset, subset_indices)
     elif dataset == "mnist":
         return get_MNIST_test(normal_labels, path)
+    elif dataset == "mnist-c":
+        concatenated_datasets = [] 
+        for corruption_type in MNIST_CORRUPTION_TYPES:
+            # Create a dataset instance for each corruption type
+            dataset_instance = MNIST_CORRUPTION(
+                corruption_type=corruption_type,
+                root_dir=path,
+                transform=transform_gray,
+                normal_class_labels=normal_labels
+            )
+            concatenated_datasets.append(dataset_instance)
+            
+        # Use ConcatDataset to concatenate all the datasets
+        # concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
+        return concatenated_datasets
+        # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
+        # subset_indices = torch.randperm(len(concated_testset))[:10000]  
+        # return torch.utils.data.Subset(concated_testset, subset_indices)
     elif dataset == "fashion":
         return get_FASHION_MNIST_test(normal_labels, path)
+    elif dataset == "fashion-c":
+        return FMNIST_CORRUPTION(split='test', transform=transform_gray, normal_class_labels=normal_labels)
     elif dataset == "svhn":
         return get_SVHN_test(normal_labels, path)
     elif dataset == "mvtec":
@@ -110,6 +173,158 @@ def get_test_dataset(dataset, normal_labels, path):
     else:
         raise Exception("Target Dataset is not supported yet. ")
         exit()
+
+
+CIFAR_CORRUPTION_TYPES = [
+    'brightness',
+    'contrast',
+    'defocus_blur',
+    'elastic_transform',
+    'fog',
+    'frost',
+    'gaussian_blur',
+    'impulse_noise',
+    'jpeg_compression',
+    'motion_blur',
+    'pixelate',
+    'saturate',
+    'shot_noise',
+    'snow',
+    'spatter',
+    'speckle_noise',
+    'zoom_blur'
+]
+
+class CIFAR_CORRUPTION(torch.utils.data.Dataset):
+    def __init__(self, transform=None, normal_class_labels = [], cifar_corruption_label = 'CIFAR-10-C/labels.npy', cifar_corruption_data = './CIFAR-10-C/defocus_blur.npy'):
+        self.labels_10 = np.load(cifar_corruption_label)
+        self.labels_10 = self.labels_10[:10000]
+        self.cifar_corruption_data = cifar_corruption_data
+        if cifar_corruption_label == 'CIFAR-100-C/labels.npy':
+            self.labels_10 = sparse2coarse(self.labels_10)
+            
+        self.data = np.load(cifar_corruption_data)
+        self.data = self.data[:10000]
+        self.transform = transform
+        self.normal_class_labels = normal_class_labels
+        
+    def __getitem__(self, index):
+        x = self.data[index]
+        label = self.labels_10[index]
+        if self.transform:
+            x = Image.fromarray((x * 255).astype(np.uint8))
+            x = self.transform(x)    
+            
+        label = 0 if label in self.normal_class_labels else 1
+        return x, label
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}(corruption_type={self.cifar_corruption_data})"
+
+import shutil
+
+MNIST_CORRUPTION_TYPES = [
+    "brightness",
+    "canny_edges",
+    "dotted_line",
+    "fog",
+    "glass_blur",
+    "impulse_noise",
+    "motion_blur",
+    "rotate",
+    "scale",
+    "shear",
+    "shot_noise",
+    "spatter",
+    "stripe",
+    "translate",
+    "zigzag"
+]
+class MNIST_CORRUPTION(torch.utils.data.Dataset):
+    def __init__(self, root_dir, corruption_type, transform=None, normal_class_labels=[]):
+        self.root_dir = root_dir
+        self.transform = transform
+        self.corruption_type = corruption_type
+        self.normal_class_labels = normal_class_labels
+        
+        indicator = 'test'
+
+        folder = os.path.join(self.root_dir, self.corruption_type, f'saved_{indicator}_images')
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
+            
+        os.makedirs(folder)
+        
+        data = np.load(os.path.join(root_dir, corruption_type, 'test_images.npy'))
+        labels = np.load(os.path.join(root_dir, corruption_type, 'test_labels.npy'))
+            
+        self.labels = labels
+        self.image_paths = []
+
+        for idx, img in enumerate(data):
+            path = os.path.join(folder, f"{idx}.png")
+            self.image_paths.append(path)
+            
+            if not os.path.exists(path):
+                img_pil = torchvision.transforms.ToPILImage()(img)
+                img_pil.save(path)
+                
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        image_path = self.image_paths[idx]
+        image = Image.open(image_path).convert("RGB") 
+
+        if self.transform:
+            image = self.transform(image)
+
+        label = self.labels[idx]
+        
+        label = 0 if label in self.normal_class_labels else 1
+        
+        return image, label
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}(corruption_type={self.corruption_type})"
+
+
+class FMNIST_CORRUPTION(torch.utils.data.Dataset):
+    def __init__(self, split='test', transform=None, normal_class_labels=[]):
+        from datasets import load_dataset
+        # Check if split is valid
+        if split not in ['train', 'test']:
+            raise ValueError("Split must be 'train' or 'test'.")
+
+        self.split = split
+        self.transform = transform or transforms.ToTensor()  # Default transform
+        self.normal_class_labels = normal_class_labels
+        
+        # Load the dataset
+        self.data = load_dataset("mweiss/fashion_mnist_corrupted")[self.split]
+        self.images = np.array([np.array(image) for image in self.data['image']])
+        self.labels = np.array(self.data['label'])
+        
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        # Get the image and label
+        image, label = self.images[idx], self.labels[idx]
+
+        # Convert to PIL Image for compatibility with torchvision transforms
+        image = Image.fromarray(image, mode='L')  # 'L' mode means grayscale
+
+        # Apply the transform to the image
+        if self.transform is not None:
+            image = self.transform(image)
+        
+        label = 0 if label in self.normal_class_labels else 1
+        
+        return image, label
 
 
 def get_CIFAR10_train(normal_class_labels, path):
