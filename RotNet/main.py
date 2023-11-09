@@ -281,7 +281,7 @@ if __name__ == "__main__":
         wandb.login(key=args.wandb_api)
         wandb.init(
             # set the wandb project where this run will be logged
-            project="BiasTest",
+            project="RotNet-Corrupt",
             config={
                 "learning_rate": args.lr,
                 "architecture": f"ResNet{args.backbone}",
