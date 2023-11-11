@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import Subset
 import torch
 import torchvision
-from torchvision.datasets import CIFAR10, MNIST, SVHN, FashionMNIST, CIFAR100
+from torchvision.datasets import CIFAR10, MNIST, SVHN, FashionMNIST, CIFAR100, EMNIST
 import torchvision.transforms as transforms
 import numpy as np
 import pandas as pd
@@ -33,6 +33,34 @@ transform_gray = transforms.Compose(
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.Grayscale(num_output_channels=3),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            (0.491373, 0.482353, 0.446667), (0.247059, 0.243529, 0.261569)
+        ),
+    ]
+)
+
+transform_emnist = transforms.Compose(
+    [
+        transforms.Resize(32),
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.Grayscale(num_output_channels=3),
+        transforms.Lambda(lambd=lambda img: transforms.functional.rotate(img, -90)),
+        transforms.Lambda(lambd=lambda img: transforms.functional.hflip(img)),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            (0.491373, 0.482353, 0.446667), (0.247059, 0.243529, 0.261569)
+        ),
+    ]
+)
+
+transform_emnist_test = transforms.Compose(
+    [
+        transforms.Resize(32),
+        transforms.Grayscale(num_output_channels=3),
+        transforms.Lambda(lambd=lambda img: transforms.functional.rotate(img, -90)),
+        transforms.Lambda(lambd=lambda img: transforms.functional.hflip(img)),
         transforms.ToTensor(),
         transforms.Normalize(
             (0.491373, 0.482353, 0.446667), (0.247059, 0.243529, 0.261569)
@@ -124,6 +152,8 @@ def get_train_dataset(dataset, label_class, path):
         return get_CIFAR100_train(label_class, path)
     elif dataset == "mnist":
         return get_MNIST_train(label_class, path)
+    elif dataset == 'emnist':
+        return get_EMNIST_train(label_class, path)
     elif dataset == "fashion":
         return get_FASHION_MNIST_train(label_class, path)
     elif dataset == "svhn":
@@ -144,6 +174,8 @@ def get_test_dataset(dataset, normal_labels, path):
         return get_CIFAR100_test(normal_labels, path)
     elif dataset == "mnist":
         return get_MNIST_test(normal_labels, path)
+    elif dataset == 'emnist':
+        return get_EMNIST_test(normal_labels, path)
     elif dataset == "fashion":
         return get_FASHION_MNIST_test(normal_labels, path)
     elif dataset == "svhn":
@@ -179,6 +211,32 @@ def get_CIFAR10_test(normal_class_labels, path):
     testset.targets[~test_mask] = 1
 
     return testset
+
+
+
+def get_EMNIST_train(normal_class_labels, path):
+    trainset = EMNIST(root=path, split='letters', train=True, download=True, transform=transform_emnist)
+
+    normal_mask = np.isin(trainset.targets, normal_class_labels)
+
+    trainset.data = trainset.data[normal_mask]
+    trainset.targets = [0 for _ in trainset.targets]
+
+    return trainset
+
+
+def get_EMNIST_test(normal_class_labels, path):
+    testset = EMNIST(
+        root=path, split='letters', train=False, download=True, transform=transform_emnist_test
+    )
+    test_mask = np.isin(testset.targets, normal_class_labels)
+
+    testset.targets = np.array(testset.targets)
+    testset.targets[test_mask] = 0
+    testset.targets[~test_mask] = 1
+
+    return testset
+
 
 
 def sparse2coarse(targets):

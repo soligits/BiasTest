@@ -20,7 +20,7 @@ def get_default_parser():
         "--dataset",
         type=str,
         default="cifar10",
-        choices=["cifar10", "mnist", "fashion"],
+        choices=["cifar10", "mnist", "fashion", 'emnist'],
     )
     parser.add_argument("--model", type=str, default="adib", choices=["adib", "adra"])
     parser.add_argument("--normal_class", type=int, nargs="+")
