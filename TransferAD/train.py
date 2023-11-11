@@ -115,7 +115,7 @@ def main():
 
         if config.ckpt:
             checkpoint(config.ckpt_path, f)
-    print(f'normal classes: {config.norma_class} auc score: {auc:.4%}')
+    print(f'normal classes: {config.normal_class} auc score: {auc:.4%}')
 
 
 if __name__ == "__main__":
