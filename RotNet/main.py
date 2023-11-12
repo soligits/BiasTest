@@ -115,92 +115,95 @@ def train_model(model, train_loader, test_loader, device, args):
     except:
         print("Failed to finish WANBD!")
     
-
 def run_epoch(model, train_loader, optimizer, criterion, device):
+    model.train()
     running_loss = 0.0
     total_num = 0
     for data in tqdm(train_loader, desc="Train..."):
-        # get the inputs; data is a list of [inputs, labels]
-        inputs_original = data[0].to(device)
+        inputs_original, labels = data[0].to(device), data[1].to(device)
 
-        # Make 4 variations of input with different degrees of rotation
-        inputs_90 = torch.rot90(inputs_original, 1, [2, 3])
-        inputs_180 = torch.rot90(inputs_original, 2, [2, 3])
-        inputs_270 = torch.rot90(inputs_original, 3, [2, 3])
+        # Use with torch.no_grad() for operations that don't need gradient tracking
+        with torch.no_grad():
+            # Make 4 variations of input with different degrees of rotation
+            inputs_90 = torch.rot90(inputs_original, 1, [2, 3])
+            inputs_180 = torch.rot90(inputs_original, 2, [2, 3])
+            inputs_270 = torch.rot90(inputs_original, 3, [2, 3])
+            inputs = torch.cat((inputs_original, inputs_90, inputs_180, inputs_270), 0)
 
-        # Concatenate all variations
-        inputs = torch.cat((inputs_original, inputs_90, inputs_180, inputs_270), 0)
+        labels = torch.cat(
+            (torch.zeros(len(inputs_original), device=device),
+             torch.ones(len(inputs_original), device=device),
+             torch.full((len(inputs_original),), 2, device=device),
+             torch.full((len(inputs_original),), 3, device=device)),
+            0
+        ).long()
 
-        # Generate labels: 0 for original, 1 for 90 degrees, 2 for 180 degrees, 3 for 270 degrees
-        labels = (
-            torch.cat(
-                (
-                    torch.zeros(len(inputs_original)),
-                    torch.ones(len(inputs_original)),
-                    torch.ones(len(inputs_original)) * 2,
-                    torch.ones(len(inputs_original)) * 3,
-                ),
-                0,
-            )
-            .long()
-            .to(device)
-        )
-
-        # Forward pass and loss calculation
+        # Zero the gradients before the forward pass
+        optimizer.zero_grad()
+        
+        # Forward pass
         rot_pred = model(inputs)
         loss = criterion(rot_pred, labels)
 
-        # Zero the gradients, perform a backward pass, and update the weights.
-        optimizer.zero_grad()
+        # Backward pass and optimization
         loss.backward()
         optimizer.step()
 
+        # Use item() to get a Python float and release the graph
         running_loss += loss.item() * inputs.size(0)
-
-        optimizer.step()
-
         total_num += inputs.size(0)
 
-    return running_loss / (total_num)
+        # Detach the variables to break from the current graph and save memory
+        inputs = inputs.detach()
+        labels = labels.detach()
+
+    # Calculate the average loss
+    average_loss = running_loss / total_num
+
+    # Clearing up memory at the end of the epoch
+    torch.cuda.empty_cache()
+
+    return average_loss
 
 
 def get_score(model, device, test_loader):
     model.eval()
     anomaly_scores = []
     test_labels = []
-    with torch.no_grad():
-        for i, data in tqdm(enumerate(test_loader, 0), desc="Testing"):
-            # get the inputs; data is a list of [inputs, labels]
-            inputs_original = data[0].to(device)
-            labels = data[1]
+    with torch.no_grad():  # Disable gradient tracking
+        for i, (inputs_original, labels) in tqdm(enumerate(test_loader), desc="Testing"):
+            inputs_original, labels = inputs_original.to(device), labels.to(device)
 
             # Make 4 variations of input with different degrees of rotation
             inputs_90 = torch.rot90(inputs_original, 1, [2, 3])
             inputs_180 = torch.rot90(inputs_original, 2, [2, 3])
             inputs_270 = torch.rot90(inputs_original, 3, [2, 3])
-
-            # Concatenate all variations
             inputs = torch.cat((inputs_original, inputs_90, inputs_180, inputs_270), 0)
 
-            c = inputs_original.shape[0]
-
+            # Forward pass
             rot_pred = model(inputs)
 
-            rot_loss = 0
-            for i in range(4):
-                rot_loss -= F.log_softmax(rot_pred[i * c : (i + 1) * c], dim=1)[:, i]
+            c = inputs_original.shape[0]
+            rot_loss = torch.zeros(c, device=device)
+            for j in range(4):  # Calculate the loss for each rotation
+                rot_loss += F.log_softmax(rot_pred[j * c : (j + 1) * c], dim=1)[:, j]
 
-            anomaly_scores.append(rot_loss.detach())
-            test_labels.append(labels)
+            # Append scores and labels for AUROC calculation
+            anomaly_scores.append(rot_loss.cpu())  # Move to CPU before concatenating
+            test_labels.append(labels.cpu())
 
-    anomaly_scores = torch.cat(anomaly_scores).cpu().numpy()
-    test_labels = torch.cat(test_labels, dim=0).cpu().numpy()
+    # Concatenate all the scores and labels
+    anomaly_scores = torch.cat(anomaly_scores).numpy()
+    test_labels = torch.cat(test_labels).numpy()
 
+    # Calculate AUROC
     auroc = roc_auc_score(test_labels, anomaly_scores)
+    
+    # Clearing up memory after testing
+    torch.cuda.empty_cache()
     model.train()
 
     return auroc
-
 
 def get_label_str(integers):
     sorted_integers = sorted(integers)
