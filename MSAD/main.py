@@ -131,6 +131,7 @@ def train_model(model, train_loader, test_loader, train_loader_1, device, args):
     center = center.to(device)
 
     epoch = 0
+    running_loss = 0.0
     for epoch in range(args.epochs):
         model.train()
         running_loss = run_epoch(
