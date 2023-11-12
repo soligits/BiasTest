@@ -10,7 +10,7 @@ import random
 from torchvision.transforms import InterpolationMode
 
 BICUBIC = InterpolationMode.BICUBIC
-from torchvision.datasets import CIFAR10, MNIST, SVHN, FashionMNIST, CIFAR100
+from torchvision.datasets import CIFAR10, MNIST, SVHN, FashionMNIST, CIFAR100, EMNIST
 import os
 from torch.utils.data import Dataset
 from PIL import Image
@@ -265,6 +265,8 @@ def get_train_dataset(dataset, label_class, path, backbone):
         return get_MNIST_train(label_class, path, backbone)
     elif dataset == "fashion" or dataset == 'fashion-c':
         return get_FASHION_MNIST_train(label_class, path, backbone)
+    elif dataset == "emnist" or dataset == 'emnist-c':
+        return get_EMNIST_train(label_class, path, backbone)
     elif dataset == "svhn":
         return get_SVHN_train(label_class, path, backbone)
     elif dataset == "mvtec":
@@ -342,6 +344,20 @@ def get_test_dataset(dataset, normal_labels, path, backbone):
         # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
         # subset_indices = torch.randperm(len(concated_testset))[:10000]  
         # return torch.utils.data.Subset(concated_testset, subset_indices)
+    elif dataset == "emnist":
+        return get_EMNIST_test(normal_labels, path, backbone)
+    elif dataset == "emnist-c":
+        concatenated_datasets = [] 
+        for corruption_type in EMNIST_CORRUPTION_TYPES:
+            dataset_instance = EMNISTCorruptionDataset(
+                corruption_type=corruption_type,
+                root_dir=path,
+                transform=transform_gray,
+                normal_class_labels=normal_labels
+            )
+            concatenated_datasets.append(dataset_instance)
+            
+        return concatenated_datasets
     elif dataset == "fashion":
         return get_FASHION_MNIST_test(normal_labels, path, backbone)
     elif dataset == "fashion-c":
@@ -356,6 +372,93 @@ def get_test_dataset(dataset, normal_labels, path, backbone):
         raise Exception("Target Dataset is not supported yet. ")
         exit()
 
+
+
+EMNIST_CORRUPTION_TYPES = [
+    'shot_noise',
+    'impulse_noise',
+    'glass_blur',
+    'motion_blur',
+    'shear',
+    'scale',
+    'rotate',
+    'brightness',
+    'contrast',
+    'saturate',
+    'inverse'
+]
+
+class EMNISTCorruptionDataset(torch.utils.data.Dataset):
+    def __init__(self, corruption_type, root_dir='./', normal_class_labels=[], transform=None):
+        """
+        Args:
+            root_dir (string): Directory with all the corrupted dataset .npy files.
+            corruption_type (string): Type of corruption applied to the dataset.
+                                      It is used to identify the files.
+            transform (callable, optional): Optional transform to be applied
+                                            on a sample.
+        """
+        self.transform = transform
+        self.corruption_type = corruption_type
+        self.images = np.load(os.path.join(root_dir, f'{corruption_type}_images.npy'))
+        self.labels = np.load(os.path.join(root_dir, f'{corruption_type}_labels.npy'))
+        # self.images = self.images.transpose((0, 2, 1))
+        self.normal_class_labels = normal_class_labels
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        image = self.images[idx]
+        label = self.labels[idx]
+
+        image = Image.fromarray(image, mode='L')  # 'L' mode means grayscale
+
+        if self.transform:
+            image = self.transform(image)
+        
+        label  = label - 1
+        
+        label = 0 if label in self.normal_class_labels else 1
+
+        return image, label
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}(corruption_type={self.corruption_type})"
+
+def get_EMNIST_train(normal_class_labels, path, backbone):
+    transform = transform_bw if backbone == "152" else transform_resnet18_bw
+
+    trainset = EMNIST(root=path, split='letters', train=True, download=True, transform=transform)
+    trainset.targets = trainset.targets - 1
+    normal_mask = np.isin(trainset.targets, normal_class_labels)
+
+    trainset.data = trainset.data[normal_mask]
+    trainset.targets = [0 for _ in trainset.targets]
+
+    trainset_moco = EMNIST(
+        root=path, split='letters', train=True, download=True, transform=Transform(bw=True)
+    )
+    trainset_moco.targets = trainset_moco.targets - 1
+    normal_mask = np.isin(trainset_moco.targets, normal_class_labels)
+
+    trainset_moco.data = trainset_moco.data[normal_mask]
+    trainset_moco.targets = [0 for _ in trainset_moco.targets]
+
+    return trainset, trainset_moco
+
+def get_EMNIST_test(normal_class_labels, path, backbone):
+    transform = transform_bw if backbone == "152" else transform_resnet18_bw
+
+    testset = EMNIST(root=path, split='letters', train=False, download=True, transform=transform)
+    testset.targets = testset.targets - 1
+    test_mask = np.isin(testset.targets, normal_class_labels)
+
+    testset.targets = np.array(testset.targets)
+    testset.targets[test_mask] = 0
+    testset.targets[~test_mask] = 1
+
+    return testset    
 
 CIFAR_CORRUPTION_TYPES = [
     'brightness',
