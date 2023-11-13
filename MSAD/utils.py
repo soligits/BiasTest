@@ -126,10 +126,16 @@ class Model(torch.nn.Module):
             self.backbone = models.resnet50(pretrained=True)
         elif backbone == "18":
             self.backbone = models.resnet18(pretrained=True)
+        elif backbone == 'vit':
+            self.backbone = models.vit_b_16(pretrained=True)
         else:
             self.backbone = RobustModel(path=path, arch=backbone).model
-
-        self.backbone.fc = torch.nn.Identity()
+        
+        if 'vit' not in backbone:
+            self.backbone.fc = torch.nn.Identity()
+        else:
+            self.backbone.heads = torch.nn.Identity()
+            
         freeze_parameters(self.backbone, backbone, train_fc=False)
 
     def forward(self, x):
