@@ -207,18 +207,19 @@ def download_and_load_backnone(url, model_name, path):
 
 
 def freeze_parameters(model, backbone, train_fc=False):
-    if not train_fc:
-        for p in model.fc.parameters():
-            p.requires_grad = False
-    if backbone == 152:
-        for p in model.conv1.parameters():
-            p.requires_grad = False
-        for p in model.bn1.parameters():
-            p.requires_grad = False
-        for p in model.layer1.parameters():
-            p.requires_grad = False
-        for p in model.layer2.parameters():
-            p.requires_grad = False
+    if 'vit' not in backbone: 
+        if not train_fc:
+            for p in model.fc.parameters():
+                p.requires_grad = False
+        if backbone == 152:
+            for p in model.conv1.parameters():
+                p.requires_grad = False
+            for p in model.bn1.parameters():
+                p.requires_grad = False
+            for p in model.layer1.parameters():
+                p.requires_grad = False
+            for p in model.layer2.parameters():
+                p.requires_grad = False
 
 def knn_score(train_set, test_set, n_neighbours=2):
     """
