@@ -243,7 +243,7 @@ class CIFAR_CORRUPTION(torch.utils.data.Dataset):
         label = self.labels_10[index]
         if self.transform:
             print(x.min(), x.max())
-            x = Image.fromarray(x).astype(np.uint8)
+            x = Image.fromarray(x.astype(np.uint8))
             x = self.transform(x)    
             
         label = 0 if label in self.normal_class_labels else 1
