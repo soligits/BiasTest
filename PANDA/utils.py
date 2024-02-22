@@ -101,9 +101,15 @@ def get_loaders(dataset, label_classes, batch_size, dataset_path):
         trainset, batch_size=batch_size, shuffle=True, num_workers=2
     )
 
-    test_loader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=False, num_workers=2
-    )
+    
+    test_loader = None
+    
+    if isinstance(testset, list):
+        print(f"Number of test sets: {len(testset)}")
+        test_loader = [torch.utils.data.DataLoader(ts, batch_size=batch_size, shuffle=False, num_workers=2) for ts in testset]
+    else:
+        test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=2)
+
 
     return train_loader, test_loader
 
@@ -144,10 +150,10 @@ def get_test_dataset(dataset, normal_labels, path):
             concatenated_datasets.append(dataset_instance)
 
         # Use ConcatDataset to concatenate all the datasets
-        concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
+        # concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
         
-        torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
-        return concated_testset
+        # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
+        return concatenated_datasets
         # subset_indices = torch.randperm(len(concated_testset))[:10000]  
         # return torch.utils.data.Subset(concated_testset, subset_indices)
     elif dataset == "cifar100":
@@ -165,10 +171,10 @@ def get_test_dataset(dataset, normal_labels, path):
             concatenated_datasets.append(dataset_instance)
 
         # Use ConcatDataset to concatenate all the datasets
-        concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
+        # concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
         
-        torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
-        return concated_testset
+        # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
+        return concatenated_datasets
         # subset_indices = torch.randperm(len(concated_testset))[:10000]  
         # return torch.utils.data.Subset(concated_testset, subset_indices)
     elif dataset == "mnist":
@@ -186,8 +192,8 @@ def get_test_dataset(dataset, normal_labels, path):
             concatenated_datasets.append(dataset_instance)
             
         # Use ConcatDataset to concatenate all the datasets
-        concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
-        return concated_testset
+        # concated_testset = torch.utils.data.ConcatDataset(concatenated_datasets)
+        return concatenated_datasets
         # torch.manual_seed(0)  # Set seed for reproducibility (change seed if needed)
         # subset_indices = torch.randperm(len(concated_testset))[:10000]  
         # return torch.utils.data.Subset(concated_testset, subset_indices)
@@ -230,6 +236,7 @@ class CIFAR_CORRUPTION(torch.utils.data.Dataset):
     def __init__(self, transform=None, normal_class_labels = [], cifar_corruption_label = 'CIFAR-10-C/labels.npy', cifar_corruption_data = './CIFAR-10-C/defocus_blur.npy'):
         self.labels_10 = np.load(cifar_corruption_label)
         self.labels_10 = self.labels_10[:10000]
+        self.cifar_corruption_data = cifar_corruption_data
         if cifar_corruption_label == 'CIFAR-100-C/labels.npy':
             self.labels_10 = sparse2coarse(self.labels_10)
             
@@ -250,6 +257,9 @@ class CIFAR_CORRUPTION(torch.utils.data.Dataset):
     
     def __len__(self):
         return len(self.data)
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}(corruption_type={self.cifar_corruption_data})"
 
 import shutil
 
@@ -259,7 +269,6 @@ MNIST_CORRUPTION_TYPES = [
     "dotted_line",
     "fog",
     "glass_blur",
-    "identity",
     "impulse_noise",
     "motion_blur",
     "rotate",
@@ -315,6 +324,9 @@ class MNIST_CORRUPTION(torch.utils.data.Dataset):
         label = 0 if label in self.normal_class_labels else 1
         
         return image, label
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}(corruption_type={self.corruption_type})"
 
 
 class FMNIST_CORRUPTION(torch.utils.data.Dataset):
