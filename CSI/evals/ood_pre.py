@@ -142,9 +142,8 @@ def get_features(P, data_name, model, loader, interp=False, prefix='',
 
     # pre-compute features and save to the path
     left = [layer for layer in layers if layer not in feats_dict.keys()]
-    imagenet = P.dataset in ['imagenet', 'mvtec', 'dtd']
     if len(left) > 0:
-        _feats_dict = _get_features(P, model, loader, interp, imagenet,
+        _feats_dict = _get_features(P, model, loader, interp, P.dataset == 'imagenet',
                                     simclr_aug, sample_num, layers=left)
 
         for layer, feats in _feats_dict.items():
@@ -171,15 +170,15 @@ def _get_features(P, model, loader, interp=False, imagenet=False, simclr_aug=Non
     model.eval()
     feats_all = {layer: [] for layer in layers}  # initialize: empty list
     for i, (x, _) in enumerate(loader):
-        torch.cuda.empty_cache()
         if interp:
             x_interp = (x + last) / 2 if i > 0 else x  # omit the first batch, assume batch sizes are equal
             last = x  # save the last batch
             x = x_interp  # use interp as current batch
 
         if imagenet is True:
-            x = torch.cat(x[0], dim=0)
-        x = x.to(device)
+            x = torch.cat(x[0], dim=0)  # augmented list of x
+
+        x = x.to(device)  # gpu tensor
 
         # compute features in one batch
         feats_batch = {layer: [] for layer in layers}  # initialize: empty list
@@ -190,22 +189,11 @@ def _get_features(P, model, loader, interp=False, imagenet=False, simclr_aug=Non
                 x_t = torch.cat([P.shift_trans(hflip(x), k) for k in range(P.K_shift)])
             else:
                 x_t = x # No shifting: SimCLR
-            # x_t = simclr_aug(x_t.to(device)).cpu()
             x_t = simclr_aug(x_t)
 
             # compute augmented features
             with torch.no_grad():
                 kwargs = {layer: True for layer in layers}  # only forward selected layers
-                # output_aux = []
-                # for x_s in x_t:
-                #     x_s = x_s.unsqueeze(0).to(device)
-                #     out_s = model(x_s, **kwargs)[1]
-                #     for k, v in out_s:
-                #         out_s[k] = v.cpu()
-                #     output_aux.append(out_s)
-                # for k, v
-                # output_aux = torch.cat(output_aux, dim=0)
-                # print(output_aux.shape)
                 _, output_aux = model(x_t, **kwargs)
 
             # add features in one batch

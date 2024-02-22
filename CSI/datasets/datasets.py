@@ -7,63 +7,12 @@ from torchvision import datasets, transforms
 
 from utils.utils import set_random_seed
 
-from glob import glob
-from torch.utils.data import Dataset, ConcatDataset
-import os
-import random
-from PIL import Image
-
-class MVTecDataset(Dataset):
-    def __init__(self, root, category, transform=None, train=True, count=-1):
-        self.transform = transform
-        self.image_files = []
-        if train:
-            self.image_files = glob(os.path.join(root, category, "train", "good", "*.png"))
-        else:
-            image_files = glob(os.path.join(root, category, "test", "*", "*.png"))
-            normal_image_files = glob(os.path.join(root, category, "test", "good", "*.png"))
-            anomaly_image_files = list(set(image_files) - set(normal_image_files))
-            self.image_files = image_files
-        if count != -1:
-            if count<len(self.image_files):
-                self.image_files = self.image_files[:count]
-            else:
-                t = len(self.image_files)
-                for i in range(count-t):
-                    self.image_files.append(random.choice(self.image_files[:t]))
-        self.image_files.sort(key=lambda y: y.lower())
-        self.train = train
-        self.targets = []
-        for image_file in self.image_files:
-            if os.path.dirname(image_file).endswith("good"):
-                target = 0
-            else:
-                target = 1
-            self.targets.append(target)
-
-    def __getitem__(self, index):
-        image_file = self.image_files[index]
-        image = Image.open(image_file)
-        image = image.convert('RGB')
-        if self.transform is not None:
-            image = self.transform(image)
-        target = self.targets[index]
-        return image, target
-
-    def __len__(self):
-        return len(self.image_files)
-
 DATA_PATH = "~/data/"
 IMAGENET_PATH = "~/data/ImageNet"
 
 
 CIFAR10_SUPERCLASS = list(range(10))  # one class
-SVHN_SUPERCLASS = list(range(10))
-MNIST_SUPERCLASS = list(range(10))
-FASHION_SUPERCLASS = list(range(10))
-MVTEC_SUPERCLASS = list(range(15))
 IMAGENET_SUPERCLASS = list(range(30))  # one class
-DTD_SUPERCLASS = list(range(47))
 
 CIFAR100_SUPERCLASS = [
     [4, 31, 55, 72, 95],
@@ -213,7 +162,6 @@ def get_dataset(
         "caltech_256",
         "dtd",
         "pets",
-        "mvtec"
     ]:
         if eval:
             train_transform, test_transform = get_simclr_eval_transform_imagenet(
@@ -223,7 +171,6 @@ def get_dataset(
             train_transform, test_transform = get_transform_imagenet()
     else:
         train_transform, test_transform = get_transform(image_size=image_size)
-
 
     if dataset == "cifar10":
         image_size = (32, 32, 3)
@@ -266,48 +213,11 @@ def get_dataset(
         )
 
     elif dataset == "svhn":
-        image_size = (32, 32, 3)
-        n_classes = 10
-        train_set = datasets.SVHN(
-            DATA_PATH, split="train", download=download, transform=test_transform
-        )
-        train_set.targets = train_set.labels
+        assert test_only and image_size is not None
         test_set = datasets.SVHN(
             DATA_PATH, split="test", download=download, transform=test_transform
         )
-        test_set.targets = test_set.labels
-    
-    elif dataset == "mvtec":
-        image_size = (224, 224, 3)
-        n_classes = 15
-        train_dataset = []
-        test_dataset = []
-        train_targets = []
-        test_targets = []
-        CLASS_NAMES = ['toothbrush', 'zipper', 'transistor', 'tile', 'grid', 'wood', 'pill', 'bottle', 'capsule', 'metal_nut', 'hazelnut', 'screw', 'carpet', 'leather', 'cable']
-        for i, cat in enumerate(CLASS_NAMES):
-            if i in P.one_class_idx:
-                tr = MVTecDataset(root='data/mvtec_anomaly_detection', train=True, category=cat, transform=train_transform, count=-1)
-                te = MVTecDataset(root='data/mvtec_anomaly_detection', train=False, category=cat, transform=test_transform, count=-1)
-                train_dataset.append(tr)
-                test_dataset.append(te)
-                train_targets += tr.targets
-                test_targets += te.targets
 
-        train_set = ConcatDataset(train_dataset)
-        train_set.targets = train_targets
-        test_set = ConcatDataset(test_dataset)
-        test_set.targets = test_targets
-    
-
-    elif dataset == 'dtd':
-        image_size = (32, 32, 3)
-        train_set = datasets.DTD('./data', split="train", download=True, transform=train_transform)
-        test_set = datasets.DTD('./data', split="test", download=True, transform=test_transform)
-        train_set.targets = train_set._labels
-        test_set.targets = test_set._labels
-        n_classes = len(train_set.classes)
-        
     elif dataset == "lsun_resize":
         assert test_only and image_size is not None
         test_dir = os.path.join(DATA_PATH, "LSUN_resize")
@@ -400,16 +310,6 @@ def get_superclass_list(dataset):
         return CIFAR100_SUPERCLASS
     elif dataset == "imagenet":
         return IMAGENET_SUPERCLASS
-    elif dataset == 'fashion':
-        return FASHION_SUPERCLASS
-    elif dataset == 'mnist':
-        return MNIST_SUPERCLASS
-    elif dataset == 'mvtec':
-        return MVTEC_SUPERCLASS
-    elif dataset == 'svhn':
-        return SVHN_SUPERCLASS
-    elif dataset == 'dtd':
-        return DTD_SUPERCLASS
     else:
         raise NotImplementedError()
 

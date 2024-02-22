@@ -41,7 +41,6 @@ elif P.mode in ["ood", "ood_pre"]:
         from evals.ood_pre import eval_ood_detection
 
     with torch.no_grad():
-
         auroc_dict = eval_ood_detection(
             P,
             model,

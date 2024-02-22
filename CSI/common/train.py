@@ -49,13 +49,8 @@ if P.one_class_idx is not None:
     P.n_superclasses = len(cls_list)
 
     full_test_set = deepcopy(test_set)  # test set of full classes
-
-    if P.dataset == 'mvtec':
-        train_set = get_subclass_dataset(train_set, classes=[0])
-        test_set = get_subclass_dataset(test_set, classes=[0])
-    else:
-        train_set = get_subclass_dataset(train_set, classes=P.one_class_idx)
-        test_set = get_subclass_dataset(test_set, classes=P.one_class_idx)
+    train_set = get_subclass_dataset(train_set, classes=P.one_class_idx)
+    test_set = get_subclass_dataset(test_set, classes=P.one_class_idx)
 
 kwargs = {"pin_memory": False, "num_workers": 4}
 
@@ -80,13 +75,9 @@ else:
         test_set, shuffle=False, batch_size=P.test_batch_size, **kwargs
     )
 
-
 if P.ood_dataset is None:
     if P.one_class_idx is not None:
-        if P.dataset == 'mvtec':
-            P.ood_dataset = [1]
-        else:            
-            P.ood_dataset = [c for c in range(P.n_superclasses) if c not in P.one_class_idx]
+        P.ood_dataset = [c for c in range(P.n_superclasses) if c not in P.one_class_idx]
     elif P.dataset == "cifar10":
         P.ood_dataset = [
             "svhn",
